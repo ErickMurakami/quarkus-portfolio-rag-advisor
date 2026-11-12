@@ -1,0 +1,50 @@
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: multitenant
+          POSTGRES_USER: quarkus
+          POSTGRES_PASSWORD: quarkus
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U quarkus -d multitenant"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: jdbc:postgresql://localhost:5432/multitenant
+      TEST_DATABASE_USERNAME: quarkus
+      TEST_DATABASE_PASSWORD: quarkus
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Run unit and integration tests
+        run: mvn -B -ntp verify
