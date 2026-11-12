@@ -1,4 +1,4 @@
-package dev.erickmurakami.portfolio.domain.models;
+package dev.erickmurakami.portfolio.application.dto;
 
 import dev.erickmurakami.portfolio.domain.enums.AccessScope;
 import dev.erickmurakami.portfolio.domain.enums.DocumentSource;
