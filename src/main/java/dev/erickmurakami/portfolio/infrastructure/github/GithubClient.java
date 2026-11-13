@@ -48,4 +48,19 @@ public interface GithubClient {
             @PathParam("owner") String owner,
             @PathParam("repo") String repo,
             @HeaderParam("Authorization") String authorization);
+
+    @GET
+    @Path("/repos/{owner}/{repo}/readme")
+    GithubReadmeResponse findReadme(
+            @PathParam("owner") String owner,
+            @PathParam("repo") String repo,
+            @HeaderParam("Authorization") String authorization);
+
+    @GET
+    @Path("/repos/{owner}/{repo}")
+    GithubRepository findRepository(
+            @PathParam("owner") String owner,
+            @PathParam("repo") String repo,
+            @HeaderParam("Authorization") String authorization);
+
 }

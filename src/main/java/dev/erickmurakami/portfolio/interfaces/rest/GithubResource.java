@@ -4,6 +4,7 @@ import java.util.List;
 
 import dev.erickmurakami.portfolio.application.dto.RepositoryInfo;
 import dev.erickmurakami.portfolio.application.services.GithubRepositoryService;
+import dev.erickmurakami.portfolio.infrastructure.github.ReadmeContent;
 import io.smallrye.common.annotation.Blocking;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -31,6 +32,22 @@ public class GithubResource {
     @Path("/me/repositories")
     public List<RepositoryInfo> findMyRepositories() {
         return service.findOwnRepositories();
+    }
+
+    @GET
+    @Blocking
+    @Path("{owner}/{repository}/readme")
+    public ReadmeContent findPublicReadme(@PathParam("owner") String owner,
+            @PathParam("repository") String repository) {
+        return service.findPublicReadme(owner, repository);
+    }
+
+    @GET
+    @Blocking
+    @Path("/me/{owner}/{repository}/readme")
+    public ReadmeContent findPrivateReadme(@PathParam("owner") String owner,
+            @PathParam("repository") String repository) {
+        return service.findAuthenticatedReadme(owner, repository);
     }
 
 }
