@@ -55,7 +55,7 @@ public class GithubServiceTest {
                 var privateRepo = repository("InternalProject", true);
 
                 when(client.findRepositories(
-                                OWNER, 50, 1, "application/vnd.github+json"))
+                                OWNER, 100, 1, "application/vnd.github+json"))
                                 .thenReturn(List.of(publicRepo, privateRepo));
 
                 when(client.findLanguages(OWNER, "Econolyze"))
@@ -167,6 +167,61 @@ public class GithubServiceTest {
                 assertEquals(
                                 "README exceeds supported size",
                                 exception.getMessage());
+        }
+
+        @Test
+        void shouldFetchAllPublicRepositoryPages() {
+                List<GithubRepository> firstPage = java.util.stream.IntStream.range(0, 100)
+                                .mapToObj(i -> repository("Repo" + i, false))
+                                .toList();
+
+                GithubRepository lastRepo = repository("LastRepo", false);
+
+                when(client.findRepositories(
+                                OWNER, 100, 1, "application/vnd.github+json")).thenReturn(firstPage);
+
+                when(client.findRepositories(
+                                OWNER, 100, 2, "application/vnd.github+json")).thenReturn(List.of(lastRepo));
+
+                when(client.findLanguages(
+                                org.mockito.ArgumentMatchers.eq(OWNER),
+                                anyString())).thenReturn(Map.of("Java", 1000L));
+
+                List<RepositoryInfo> result = service.findPublicRepositories(OWNER);
+
+                assertEquals(101, result.size());
+                assertEquals("LastRepo", result.getLast().name());
+
+                verify(client).findRepositories(
+                                OWNER, 100, 2, "application/vnd.github+json");
+        }
+
+        @Test
+        void shouldFetchAllAuthenticatedRepositoryPages() {
+                List<GithubRepository> firstPage = java.util.stream.IntStream.range(0, 100)
+                                .mapToObj(i -> repository("Repo" + i, false))
+                                .toList();
+
+                GithubRepository privateRepo = repository("PrivateProject", true);
+
+                when(client.findAuthenticatedRepositories(
+                                AUTH, "all", "owner", 100, 1)).thenReturn(firstPage);
+
+                when(client.findAuthenticatedRepositories(
+                                AUTH, "all", "owner", 100, 2)).thenReturn(List.of(privateRepo));
+
+                when(client.findAuthenticatedLanguages(
+                                org.mockito.ArgumentMatchers.eq(OWNER),
+                                anyString(),
+                                org.mockito.ArgumentMatchers.eq(AUTH))).thenReturn(Map.of("Java", 1000L));
+
+                List<RepositoryInfo> result = service.findOwnRepositories();
+
+                assertEquals(101, result.size());
+                assertTrue(result.getLast().isPrivate());
+
+                verify(client).findAuthenticatedRepositories(
+                                AUTH, "all", "owner", 100, 2);
         }
 
         @Test

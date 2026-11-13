@@ -1,9 +1,11 @@
 package dev.erickmurakami.portfolio.application.services;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntFunction;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -20,7 +22,7 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class GithubService {
 
-    private static final int MAX_REPOSITORIES = 50;
+    private static final int PAGE_SIZE = 100;
     private static final long MAX_README_BYTES = 250_000;
 
     @ConfigProperty(name = "github.token")
@@ -31,8 +33,8 @@ public class GithubService {
     GithubClient client;
 
     public List<RepositoryInfo> findPublicRepositories(String username) {
-        List<GithubRepository> repos = client.findRepositories(username, MAX_REPOSITORIES, 1,
-                "application/vnd.github+json");
+        List<GithubRepository> repos = fetchAllPages(
+                page -> client.findRepositories(username, PAGE_SIZE, page, "application/vnd.github+json"));
 
         return repos.stream()
                 .filter(r -> !r.isPrivate())
@@ -46,7 +48,8 @@ public class GithubService {
     public List<RepositoryInfo> findOwnRepositories() {
         String authorization = "Bearer " + githubToken;
 
-        List<GithubRepository> repos = client.findAuthenticatedRepositories(authorization, "all", "owner", 100, 1);
+        List<GithubRepository> repos = fetchAllPages(
+                page -> client.findAuthenticatedRepositories(authorization, "all", "owner", 100, 1));
 
         return repos.stream()
                 .map(repo -> {
@@ -65,6 +68,27 @@ public class GithubService {
 
     public ReadmeContent findAuthenticatedReadme(String owner, String repo) {
         return findReadme(owner, repo, "Bearer " + githubToken, false);
+    }
+
+    private List<GithubRepository> fetchAllPages(IntFunction<List<GithubRepository>> fetchPage) {
+        List<GithubRepository> repositories = new ArrayList<>();
+        int page = 1;
+
+        while (true) {
+            List<GithubRepository> currentPage = fetchPage.apply(page);
+
+            if (currentPage == null) {
+                throw new IllegalStateException("Github returned a null repository page: " + page);
+            }
+            repositories.addAll(currentPage);
+
+            if (currentPage.size() < PAGE_SIZE) {
+                break;
+            }
+
+            page++;
+        }
+        return repositories;
     }
 
     private ReadmeContent findReadme(String owner, String repo, String auth, boolean publicOnly) {
