@@ -37,7 +37,6 @@ public class DocumentChunkingService {
 
             for (String content : splitSection(section.strip())) {
                 chunks.add(new DocumentChunk(
-                        null,
                         devId,
                         content,
                         DocumentSource.GITHUB,

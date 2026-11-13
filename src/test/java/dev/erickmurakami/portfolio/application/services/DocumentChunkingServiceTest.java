@@ -14,115 +14,115 @@ import dev.erickmurakami.portfolio.infrastructure.github.ReadmeContent;
 
 class DocumentChunkingServiceTest {
 
-    private final DocumentChunkingService service = new DocumentChunkingService();
+        private final DocumentChunkingService service = new DocumentChunkingService();
 
-    private static final Long DEV_ID = 1L;
+        private static final Long DEV_ID = 1L;
 
-    @Test
-    void shouldSplitMarkdownByHeadings() {
-        String markdown = """
-                # Econolyze
-                Personal finance platform.
+        @Test
+        void shouldSplitMarkdownByHeadings() {
+                String markdown = """
+                                # Econolyze
+                                Personal finance platform.
 
-                ## Architecture
-                Built using Clean Architecture.
+                                ## Architecture
+                                Built using Clean Architecture.
 
-                ## Security
-                Authentication with JWT.
-                """;
+                                ## Security
+                                Authentication with JWT.
+                                """;
 
-        List<DocumentChunk> chunks = service.chunkReadme(
-                DEV_ID,
-                readme(markdown, AccessScope.PUBLIC));
+                List<DocumentChunk> chunks = service.chunkReadme(
+                                DEV_ID,
+                                readme(markdown, AccessScope.PUBLIC));
 
-        assertEquals(3, chunks.size());
-        assertTrue(chunks.get(0).content().startsWith("# Econolyze"));
-        assertTrue(chunks.get(1).content().startsWith("## Architecture"));
-        assertTrue(chunks.get(2).content().startsWith("## Security"));
-    }
-
-    @Test
-    void shouldSplitLongSectionsWithOverlap() {
-        String markdown = "# Architecture\n" + "Java Quarkus ".repeat(250);
-
-        List<DocumentChunk> chunks = service.chunkReadme(
-                DEV_ID,
-                readme(markdown, AccessScope.PUBLIC));
-
-        assertTrue(chunks.size() > 1);
-
-        for (DocumentChunk chunk : chunks) {
-            assertTrue(chunk.content().length() <= 1000);
-            assertFalse(chunk.content().isBlank());
+                assertEquals(3, chunks.size());
+                assertTrue(chunks.get(0).getContent().startsWith("# Econolyze"));
+                assertTrue(chunks.get(1).getContent().startsWith("## Architecture"));
+                assertTrue(chunks.get(2).getContent().startsWith("## Security"));
         }
 
-        String first = chunks.get(0).content();
-        String second = chunks.get(1).content();
+        @Test
+        void shouldSplitLongSectionsWithOverlap() {
+                String markdown = "# Architecture\n" + "Java Quarkus ".repeat(250);
 
-        // The second chunk must begin with text
-        // already present in the first chunk.
-        String overlappingText = second.substring(
-                0,
-                Math.min(50, second.length()));
+                List<DocumentChunk> chunks = service.chunkReadme(
+                                DEV_ID,
+                                readme(markdown, AccessScope.PUBLIC));
 
-        assertTrue(
-                first.contains(overlappingText),
-                "Consecutive chunks should share overlapping text");
-    }
+                assertTrue(chunks.size() > 1);
 
-    @Test
-    void shouldPreservePrivateAccessScope() {
-        List<DocumentChunk> chunks = service.chunkReadme(
-                DEV_ID,
-                readme("# Internal project", AccessScope.PRIVATE));
+                for (DocumentChunk chunk : chunks) {
+                        assertTrue(chunk.getContent().length() <= 1000);
+                        assertFalse(chunk.getContent().isBlank());
+                }
 
-        assertEquals(1, chunks.size());
-        assertEquals(
-                AccessScope.PRIVATE,
-                chunks.getFirst().accessScope());
-        assertEquals(
-                DocumentSource.GITHUB,
-                chunks.getFirst().source());
-        assertEquals(DEV_ID, chunks.getFirst().devId());
-        assertNull(chunks.getFirst().id());
-    }
+                String first = chunks.get(0).getContent();
+                String second = chunks.get(1).getContent();
 
-    @Test
-    void shouldPreserveSourceReference() {
-        List<DocumentChunk> chunks = service.chunkReadme(
-                DEV_ID,
-                readme("# Econolyze", AccessScope.PUBLIC));
+                // The second chunk must begin with text
+                // already present in the first chunk.
+                String overlappingText = second.substring(
+                                0,
+                                Math.min(50, second.length()));
 
-        assertEquals(
-                "https://github.com/ErickMurakami/Econolyze",
-                chunks.getFirst().sourceReference());
-    }
+                assertTrue(
+                                first.contains(overlappingText),
+                                "Consecutive chunks should share overlapping text");
+        }
 
-    @Test
-    void shouldReturnEmptyListForBlankReadme() {
-        List<DocumentChunk> chunks = service.chunkReadme(
-                DEV_ID,
-                readme("   ", AccessScope.PUBLIC));
+        @Test
+        void shouldPreservePrivateAccessScope() {
+                List<DocumentChunk> chunks = service.chunkReadme(
+                                DEV_ID,
+                                readme("# Internal project", AccessScope.PRIVATE));
 
-        assertTrue(chunks.isEmpty());
-    }
+                assertEquals(1, chunks.size());
+                assertEquals(
+                                AccessScope.PRIVATE,
+                                chunks.getFirst().getAccessScope());
+                assertEquals(
+                                DocumentSource.GITHUB,
+                                chunks.getFirst().getSource());
+                assertEquals(DEV_ID, chunks.getFirst().getDevId());
+                assertNull(chunks.getFirst().getId());
+        }
 
-    @Test
-    void shouldRejectMissingDeveloperId() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> service.chunkReadme(
-                        null,
-                        readme("# Econolyze", AccessScope.PUBLIC)));
-    }
+        @Test
+        void shouldPreserveSourceReference() {
+                List<DocumentChunk> chunks = service.chunkReadme(
+                                DEV_ID,
+                                readme("# Econolyze", AccessScope.PUBLIC));
 
-    private ReadmeContent readme(
-            String content,
-            AccessScope scope) {
-        return new ReadmeContent(
-                "Econolyze",
-                content,
-                scope,
-                "https://github.com/ErickMurakami/Econolyze");
-    }
+                assertEquals(
+                                "https://github.com/ErickMurakami/Econolyze",
+                                chunks.getFirst().getSourceReference());
+        }
+
+        @Test
+        void shouldReturnEmptyListForBlankReadme() {
+                List<DocumentChunk> chunks = service.chunkReadme(
+                                DEV_ID,
+                                readme("   ", AccessScope.PUBLIC));
+
+                assertTrue(chunks.isEmpty());
+        }
+
+        @Test
+        void shouldRejectMissingDeveloperId() {
+                assertThrows(
+                                IllegalArgumentException.class,
+                                () -> service.chunkReadme(
+                                                null,
+                                                readme("# Econolyze", AccessScope.PUBLIC)));
+        }
+
+        private ReadmeContent readme(
+                        String content,
+                        AccessScope scope) {
+                return new ReadmeContent(
+                                "Econolyze",
+                                content,
+                                scope,
+                                "https://github.com/ErickMurakami/Econolyze");
+        }
 }
