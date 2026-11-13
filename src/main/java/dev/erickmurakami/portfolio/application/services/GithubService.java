@@ -18,7 +18,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
-public class GithubRepositoryService {
+public class GithubService {
 
     private static final int MAX_REPOSITORIES = 50;
     private static final long MAX_README_BYTES = 250_000;
@@ -69,6 +69,10 @@ public class GithubRepositoryService {
 
     private ReadmeContent findReadme(String owner, String repo, String auth, boolean publicOnly) {
         GithubRepository repository = client.findRepository(owner, repo, auth);
+
+        if (publicOnly && repository.isPrivate()) {
+            throw new IllegalArgumentException("Repository is private");
+        }
 
         GithubReadmeResponse readme = client.findReadme(owner, repo, auth);
 

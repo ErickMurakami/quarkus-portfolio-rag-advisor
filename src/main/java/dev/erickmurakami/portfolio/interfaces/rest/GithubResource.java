@@ -3,7 +3,7 @@ package dev.erickmurakami.portfolio.interfaces.rest;
 import java.util.List;
 
 import dev.erickmurakami.portfolio.application.dto.RepositoryInfo;
-import dev.erickmurakami.portfolio.application.services.GithubRepositoryService;
+import dev.erickmurakami.portfolio.application.services.GithubService;
 import dev.erickmurakami.portfolio.infrastructure.github.ReadmeContent;
 import io.smallrye.common.annotation.Blocking;
 import jakarta.inject.Inject;
@@ -18,7 +18,7 @@ import jakarta.ws.rs.core.MediaType;
 public class GithubResource {
 
     @Inject
-    GithubRepositoryService service;
+    GithubService service;
 
     @GET
     @Blocking

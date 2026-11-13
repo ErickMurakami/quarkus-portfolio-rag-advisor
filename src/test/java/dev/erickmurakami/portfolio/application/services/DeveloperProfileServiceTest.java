@@ -1,4 +1,4 @@
-package dev.erickmurakami.application.services;
+package dev.erickmurakami.portfolio.application.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -20,7 +20,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import dev.erickmurakami.portfolio.application.dto.DeveloperProfileRequest;
 import dev.erickmurakami.portfolio.application.dto.DeveloperProfileResponse;
 import dev.erickmurakami.portfolio.application.dto.SkillRequest;
-import dev.erickmurakami.portfolio.application.services.DeveloperProfileService;
 import dev.erickmurakami.portfolio.domain.enums.SkillCategory;
 import dev.erickmurakami.portfolio.domain.models.DeveloperProfile;
 import dev.erickmurakami.portfolio.infrastructure.repository.DeveloperProfileRepository;
@@ -43,8 +42,10 @@ public class DeveloperProfileServiceTest {
     }
 
     @Test
-    void shouldCreateDeveloperWithSkills(){
-        var request = new DeveloperProfileRequest("Erick Murakami", "erickmurakami", List.of(new SkillRequest("Java", SkillCategory.LANGUAGE), new SkillRequest("Quarkus", SkillCategory.FRAMEWORK)));
+    void shouldCreateDeveloperWithSkills() {
+        var request = new DeveloperProfileRequest("Erick Murakami", "erickmurakami",
+                List.of(new SkillRequest("Java", SkillCategory.LANGUAGE),
+                        new SkillRequest("Quarkus", SkillCategory.FRAMEWORK)));
         DeveloperProfileResponse response = service.create(request);
 
         assertNotNull(response);
@@ -53,7 +54,7 @@ public class DeveloperProfileServiceTest {
     }
 
     @Test
-    void shouldCreateDeveloperWithoutSkills(){
+    void shouldCreateDeveloperWithoutSkills() {
         var request = new DeveloperProfileRequest("Erick Murakami", "erickmurakami", null);
         DeveloperProfileResponse response = service.create(request);
         assertNotNull(response);
@@ -62,7 +63,7 @@ public class DeveloperProfileServiceTest {
     }
 
     @Test
-    void shouldNormalizeGithubUsernameWhenCreatingDeveloper(){
+    void shouldNormalizeGithubUsernameWhenCreatingDeveloper() {
         var request = new DeveloperProfileRequest("Erick Murakami", "  ErickMurakami  ", null);
         DeveloperProfileResponse response = service.create(request);
         assertNotNull(response);
@@ -71,7 +72,7 @@ public class DeveloperProfileServiceTest {
     }
 
     @Test
-    void shouldFindDeveloperById(){
+    void shouldFindDeveloperById() {
         when(repository.findByIdOptional(1L)).thenReturn(Optional.of(profile));
         DeveloperProfileResponse response = service.findById(1L);
         assertNotNull(response);
@@ -79,7 +80,7 @@ public class DeveloperProfileServiceTest {
     }
 
     @Test
-    void shouldFindDeveloperByGithubUsername(){
+    void shouldFindDeveloperByGithubUsername() {
         when(repository.findByGithubUsername("erickmurakami")).thenReturn(Optional.of(profile));
         DeveloperProfileResponse response = service.findByGithubUsername("erickmurakami");
         assertNotNull(response);
@@ -87,7 +88,7 @@ public class DeveloperProfileServiceTest {
     }
 
     @Test
-    void shouldThrowExceptionWhenDeveloperNotFoundById(){
+    void shouldThrowExceptionWhenDeveloperNotFoundById() {
         when(repository.findByIdOptional(1L)).thenReturn(Optional.empty());
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             service.findById(1L);
@@ -96,7 +97,7 @@ public class DeveloperProfileServiceTest {
     }
 
     @Test
-    void shouldThrowExceptionWhenDeveloperNotFoundByGithubUsername(){
+    void shouldThrowExceptionWhenDeveloperNotFoundByGithubUsername() {
         when(repository.findByGithubUsername("johndoe")).thenReturn(Optional.empty());
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             service.findByGithubUsername("johndoe");
@@ -104,7 +105,7 @@ public class DeveloperProfileServiceTest {
         assertEquals("Developer profile not found for GitHub username: johndoe", exception.getMessage());
     }
 
-    private DeveloperProfile profileFromPersisted(){
+    private DeveloperProfile profileFromPersisted() {
         var captor = ArgumentCaptor.forClass(DeveloperProfile.class);
         verify(repository).persist(captor.capture());
         return captor.getValue();

@@ -1,4 +1,4 @@
-package dev.erickmurakami.application.services;
+package dev.erickmurakami.portfolio.application.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -16,8 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import dev.erickmurakami.portfolio.application.services.ResumeAiExtractor;
-import dev.erickmurakami.portfolio.application.services.ResumeImportService;
 import dev.erickmurakami.portfolio.infrastructure.document.PdfTextExtractor;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,23 +34,23 @@ public class ResumeImportServiceTest {
     ResumeImportService service;
 
     @Test
-    void shouldExtractDeveloperProfile() throws IOException{
+    void shouldExtractDeveloperProfile() throws IOException {
         Path pdf = Path.of("resume.pdf");
 
         when(textExtractor.extract(pdf)).thenReturn("John Doe - Java Developer");
 
         when(aiExtractor.extractDeveloperProfileFromResume(anyString()))
-            .thenReturn("""
-                {
-                    "fullName": "John Doe",
-                    "skills":[
-                        {
-                            "name": "Java",
-                            "category": "LANGUAGE"
-                        }
-                    ]
-                }
-            """);
+                .thenReturn("""
+                            {
+                                "fullName": "John Doe",
+                                "skills":[
+                                    {
+                                        "name": "Java",
+                                        "category": "LANGUAGE"
+                                    }
+                                ]
+                            }
+                        """);
 
         var result = service.importResume(pdf, "JohnDoe");
 
