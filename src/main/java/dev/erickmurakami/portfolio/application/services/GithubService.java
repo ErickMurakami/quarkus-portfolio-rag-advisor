@@ -49,7 +49,7 @@ public class GithubService {
         String authorization = "Bearer " + githubToken;
 
         List<GithubRepository> repos = fetchAllPages(
-                page -> client.findAuthenticatedRepositories(authorization, "all", "owner", 100, 1));
+                page -> client.findAuthenticatedRepositories(authorization, "all", "owner", PAGE_SIZE, page));
 
         return repos.stream()
                 .map(repo -> {
