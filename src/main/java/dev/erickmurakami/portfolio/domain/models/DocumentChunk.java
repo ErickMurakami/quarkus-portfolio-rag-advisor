@@ -1,5 +1,7 @@
 package dev.erickmurakami.portfolio.domain.models;
 
+import java.util.Arrays;
+
 import org.hibernate.annotations.Array;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -82,7 +84,7 @@ public class DocumentChunk {
         if (embedding == null || embedding.length != 1024) {
             throw new IllegalArgumentException("Embedding must have 1024 dimensions");
         }
-        this.embedding = embedding;
+        this.embedding = Arrays.copyOf(embedding, embedding.length);
     }
 
 }
