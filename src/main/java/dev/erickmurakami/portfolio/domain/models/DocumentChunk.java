@@ -82,7 +82,7 @@ public class DocumentChunk {
         if (embedding == null || embedding.length != 1024) {
             throw new IllegalArgumentException("Embedding must have 1024 dimensions");
         }
-        this.embedding = embedding.clone();
+        this.embedding = embedding;
     }
 
 }
