@@ -43,6 +43,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
 
       GITHUB_TOKEN: ${GITHUB_TOKEN:?GITHUB_TOKEN is required}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY:?VOYAGE_API_KEY is required}
       AI_API_KEY: ${AI_API_KEY:?AI_API_KEY is required}
       AI_BASE_URL: ${AI_BASE_URL:-https://api.groq.com/openai/v1/}
       AI_MODEL: ${AI_MODEL:-openai/gpt-oss-20b}
