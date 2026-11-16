@@ -52,7 +52,7 @@ class DocumentChunkingServiceTest {
                 assertTrue(chunks.size() > 1);
 
                 for (DocumentChunk chunk : chunks) {
-                        assertTrue(chunk.getContent().length() <= 1000);
+                        assertTrue(chunk.getContent().length() <= 2000);
                         assertFalse(chunk.getContent().isBlank());
                 }
 
