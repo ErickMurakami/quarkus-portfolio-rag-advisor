@@ -1,5 +1,6 @@
 package dev.erickmurakami.portfolio.interfaces.rest;
 
+import dev.erickmurakami.portfolio.application.dto.IngestionResult;
 import dev.erickmurakami.portfolio.application.services.RepositoryIngestionService;
 import io.smallrye.common.annotation.Blocking;
 import jakarta.inject.Inject;
@@ -23,6 +24,13 @@ public class IngestionResource {
             @PathParam("repository") String repository) {
         return service.ingestPublicRepository(
                 devId, owner, repository);
+    }
+
+    @POST
+    @Blocking
+    @Path("/{devId}/repositories/ingest")
+    public IngestionResult ingestAll(@PathParam("devId") Long devId) {
+        return service.ingestDeveloperRepositories(devId, true);
     }
 
 }
