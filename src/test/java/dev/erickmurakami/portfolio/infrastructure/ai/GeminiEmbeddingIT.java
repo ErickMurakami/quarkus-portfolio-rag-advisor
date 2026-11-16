@@ -12,7 +12,7 @@ import dev.langchain4j.model.embedding.EmbeddingModel;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-public class VoyageEmbeddingIT {
+public class GeminiEmbeddingIT {
 
     @Inject
     EmbeddingModel model;
