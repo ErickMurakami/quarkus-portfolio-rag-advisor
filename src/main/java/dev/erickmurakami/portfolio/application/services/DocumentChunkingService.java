@@ -12,8 +12,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class DocumentChunkingService {
 
-    private static final int CHUNK_SIZE = 1000;
-    private static final int CHUNK_OVERLAP = 150;
+    private static final int CHUNK_SIZE = 2000;
+    private static final int CHUNK_OVERLAP = 200;
 
     private static final Pattern MD_HEADING = Pattern.compile("(?=^#{1,6}[ \\t]+)", Pattern.MULTILINE);
 
