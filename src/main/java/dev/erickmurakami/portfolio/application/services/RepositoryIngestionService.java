@@ -82,7 +82,7 @@ public class RepositoryIngestionService {
                 LOG.errorf(ex, "Failed to access repository: %s", repo.name());
                 throw ex;
             } catch (RateLimitException ex) {
-                LOG.warnf("Voyage AI rate limit reached while indexing: %s", repo.name());
+                LOG.warnf("Gemini AI rate limit reached while indexing: %s", repo.name());
                 throw ex;
             } catch (RuntimeException ex) {
                 LOG.errorf(ex, "Failed to ingest repository: %s", repo.name());
