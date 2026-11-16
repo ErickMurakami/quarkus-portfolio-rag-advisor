@@ -136,4 +136,60 @@ public class IngestionJob {
         return completedAt;
     }
 
+    public void setDevId(Long devId) {
+        this.devId = devId;
+    }
+
+    public void setIncludePrivate(boolean includePrivate) {
+        this.includePrivate = includePrivate;
+    }
+
+    public void setStatus(IngestionJobStatus status) {
+        this.status = status;
+    }
+
+    public void setTotalRepos(int totalRepos) {
+        this.totalRepos = totalRepos;
+    }
+
+    public void setProcessedRepos(int processedRepos) {
+        this.processedRepos = processedRepos;
+    }
+
+    public void setSkippedRepos(int skippedRepos) {
+        this.skippedRepos = skippedRepos;
+    }
+
+    public void setFailedRepos(int failedRepos) {
+        this.failedRepos = failedRepos;
+    }
+
+    public void setTotalChunks(int totalChunks) {
+        this.totalChunks = totalChunks;
+    }
+
+    public void setCurrentRepository(String currentRepository) {
+        this.currentRepository = currentRepository;
+    }
+
+    public void setNextAttemptAt(Instant nextAttemptAt) {
+        this.nextAttemptAt = nextAttemptAt;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public void setCompletedAt(Instant completedAt) {
+        this.completedAt = completedAt;
+    }
+
 }
