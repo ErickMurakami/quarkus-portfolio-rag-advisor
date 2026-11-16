@@ -132,4 +132,14 @@ public class GithubService {
                 languages.keySet().stream().sorted().toList(),
                 repo.topics() == null ? List.of() : List.copyOf(repo.topics()));
     }
+
+    public void validateAuthenticatedUser(String username) {
+        String authorization = "Bearer " + githubToken;
+
+        String authenticatedUser = client.findOwner(authorization).login();
+
+        if (!username.equalsIgnoreCase(authenticatedUser)) {
+            throw new SecurityException("Github token does not belong to developer: " + username);
+        }
+    }
 }
