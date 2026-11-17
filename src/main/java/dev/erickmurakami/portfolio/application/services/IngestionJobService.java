@@ -138,6 +138,20 @@ public class IngestionJobService {
         job.setUpdatedAt(Instant.now());
     }
 
+    @Transactional
+    public void skipFailed(UUID id, String nextRepo) {
+        IngestionJob job = findByIdInternal(id);
+
+        job.setFailedRepos(job.getFailedRepos() + 1);
+        job.setCurrentRepository(nextRepo);
+        job.setUpdatedAt(Instant.now());
+
+        if (nextRepo == null) {
+            job.setCompletedAt(Instant.now());
+            job.setStatus(IngestionJobStatus.COMPLETED);
+        }
+    }
+
     public Optional<IngestionJob> findRunnable() {
         return repository.find("status in ?1 and (nextAttemptAt is null or nextAttemptAt <= ?2) order by createdAt",
                 List.of(IngestionJobStatus.PENDING, IngestionJobStatus.RUNNING, IngestionJobStatus.WAITING_RATE_LIMIT),
