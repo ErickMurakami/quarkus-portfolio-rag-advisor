@@ -2,6 +2,7 @@ package dev.erickmurakami.portfolio.application.services;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import dev.erickmurakami.portfolio.application.dto.IngestionJobResponse;
@@ -56,16 +57,26 @@ public class IngestionJobService {
     }
 
     @Transactional
-    public void start(UUID jobId, int totalRepos) {
+    public void start(UUID jobId, int totalRepos, String firstRepo) {
         IngestionJob job = findByIdInternal(jobId);
         if (job.getStatus() != IngestionJobStatus.PENDING) {
             throw new IllegalStateException("Job must be pending");
         }
-        if (totalRepos < 0) {
-            throw new IllegalStateException("Total repositories cannot be negative");
-        }
         job.setTotalRepos(totalRepos);
-        job.setStatus(IngestionJobStatus.RUNNING);
+        job.setCurrentRepository(firstRepo);
         job.setUpdatedAt(Instant.now());
+
+        if (firstRepo == null) {
+            job.setStatus(IngestionJobStatus.COMPLETED);
+            job.setCompletedAt(Instant.now());
+        } else {
+            job.setStatus(IngestionJobStatus.RUNNING);
+        }
+    }
+
+    public Optional<IngestionJob> findRunnable() {
+        return repository.find("status in ?1 and (nextAttemptAt is null or nextAttemptAt <= ?2) order by createdAt",
+                List.of(IngestionJobStatus.PENDING, IngestionJobStatus.RUNNING, IngestionJobStatus.WAITING_RATE_LIMIT),
+                Instant.now()).firstResultOptional();
     }
 }

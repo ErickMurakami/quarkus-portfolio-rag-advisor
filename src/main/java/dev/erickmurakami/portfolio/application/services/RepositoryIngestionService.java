@@ -93,15 +93,10 @@ public class RepositoryIngestionService {
     }
 
     private int ingestRepository(Long devId, String username, RepositoryInfo repo, boolean includePrivate) {
-        ReadmeContent readme;
-
-        if (includePrivate) {
-            readme = githubService.findAuthenticatedReadme(username, repo.name());
-        } else {
-            readme = githubService.findPublicReadme(username, repo.name());
-        }
-
-        return ingestReadme(devId, readme);
+        ReadmeContent readmeContent = includePrivate
+                ? githubService.findAuthenticatedReadme(username, repo.name())
+                : githubService.findPublicReadme(username, repo.name());
+        return ingestReadme(devId, readmeContent);
     }
 
     private int ingestReadme(Long devId, ReadmeContent readme) {

@@ -133,6 +133,25 @@ public class GithubService {
                 repo.topics() == null ? List.of() : List.copyOf(repo.topics()));
     }
 
+    public List<String> findRepoNames(String username, boolean includePrivate) {
+        if (includePrivate) {
+            validateAuthenticatedUser(username);
+            String auth = "Bearer " + githubToken;
+
+            return fetchAllPages(page -> client.findAuthenticatedRepositories(auth, "all", "owner", PAGE_SIZE, page))
+                    .stream()
+                    .map(GithubRepository::name)
+                    .sorted()
+                    .toList();
+        }
+        return fetchAllPages(page -> client.findRepositories(username, PAGE_SIZE, page, "application/vnd.github+json"))
+                .stream()
+                .filter(repo -> !repo.isPrivate())
+                .map(GithubRepository::name)
+                .sorted()
+                .toList();
+    }
+
     public void validateAuthenticatedUser(String username) {
         String authorization = "Bearer " + githubToken;
 
