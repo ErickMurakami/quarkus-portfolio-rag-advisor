@@ -140,14 +140,14 @@ public class GithubService {
 
             return fetchAllPages(page -> client.findAuthenticatedRepositories(auth, "all", "owner", PAGE_SIZE, page))
                     .stream()
-                    .map(GithubRepository::name)
+                    .map(g -> g.name())
                     .sorted()
                     .toList();
         }
         return fetchAllPages(page -> client.findRepositories(username, PAGE_SIZE, page, "application/vnd.github+json"))
                 .stream()
                 .filter(repo -> !repo.isPrivate())
-                .map(GithubRepository::name)
+                .map(g -> g.name())
                 .sorted()
                 .toList();
     }
