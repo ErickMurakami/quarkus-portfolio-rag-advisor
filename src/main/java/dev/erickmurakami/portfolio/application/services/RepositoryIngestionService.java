@@ -65,7 +65,7 @@ public class RepositoryIngestionService {
 
         for (RepositoryInfo repo : repos) {
             try {
-                int chunks = ingestRepository(devId, username, repo, includePrivate);
+                int chunks = ingestRepository(devId, username, repo.name(), includePrivate);
 
                 if (chunks == 0) {
                     skipped++;
@@ -92,10 +92,10 @@ public class RepositoryIngestionService {
         return new IngestionResult(repos.size(), processed, skipped, failed, totalChunks);
     }
 
-    private int ingestRepository(Long devId, String username, RepositoryInfo repo, boolean includePrivate) {
+    public int ingestRepository(Long devId, String username, String repo, boolean includePrivate) {
         ReadmeContent readmeContent = includePrivate
-                ? githubService.findAuthenticatedReadme(username, repo.name())
-                : githubService.findPublicReadme(username, repo.name());
+                ? githubService.findAuthenticatedReadme(username, repo)
+                : githubService.findPublicReadme(username, repo);
         return ingestReadme(devId, readmeContent);
     }
 

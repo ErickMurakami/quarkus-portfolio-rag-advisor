@@ -116,6 +116,17 @@ public class IngestionJobService {
         }
     }
 
+    @Transactional
+    public void fail(UUID id, String message) {
+        IngestionJob job = findByIdInternal(id);
+
+        job.setStatus(IngestionJobStatus.FAILED);
+        job.setErrorMessage(message);
+        job.setNextAttemptAt(null);
+        job.setCompletedAt(Instant.now());
+        job.setUpdatedAt(Instant.now());
+    }
+
     public Optional<IngestionJob> findRunnable() {
         return repository.find("status in ?1 and (nextAttemptAt is null or nextAttemptAt <= ?2) order by createdAt",
                 List.of(IngestionJobStatus.PENDING, IngestionJobStatus.RUNNING, IngestionJobStatus.WAITING_RATE_LIMIT),
