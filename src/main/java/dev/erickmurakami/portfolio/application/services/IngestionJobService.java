@@ -114,6 +114,17 @@ public class IngestionJobService {
             job.setProcessedRepos(job.getProcessedRepos() + 1);
             job.setTotalChunks(job.getTotalChunks() + chunks);
         }
+
+        Instant now = Instant.now();
+
+        job.setCurrentRepository(nextRepo);
+        job.setNextAttemptAt(null);
+        job.setUpdatedAt(now);
+
+        if (nextRepo == null) {
+            job.setStatus(IngestionJobStatus.COMPLETED);
+            job.setCompletedAt(now);
+        }
     }
 
     @Transactional
