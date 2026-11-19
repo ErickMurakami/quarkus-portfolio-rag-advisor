@@ -18,6 +18,7 @@ public class EmbeddingConfiguration {
 
     @Produces
     @ApplicationScoped
+    @QueryEmbedding
     public EmbeddingModel embeddingModel() {
         System.setProperty("langchain4j.http.clientBuilderFactory", HTTP_CLIENT_FACTORY);
         return GoogleAiEmbeddingModel.builder()
