@@ -18,13 +18,23 @@ public class EmbeddingConfiguration {
 
     @Produces
     @ApplicationScoped
-    @QueryEmbedding
     public EmbeddingModel embeddingModel() {
+        return createModel(GoogleAiEmbeddingModel.TaskType.RETRIEVAL_DOCUMENT);
+    }
+
+    @Produces
+    @ApplicationScoped
+    @QueryEmbedding
+    public EmbeddingModel queryEmbeddingModel() {
+        return createModel(GoogleAiEmbeddingModel.TaskType.RETRIEVAL_QUERY);
+    }
+
+    private EmbeddingModel createModel(GoogleAiEmbeddingModel.TaskType taskType) {
         System.setProperty("langchain4j.http.clientBuilderFactory", HTTP_CLIENT_FACTORY);
         return GoogleAiEmbeddingModel.builder()
                 .apiKey(apiKey)
                 .modelName("gemini-embedding-001")
-                .taskType(GoogleAiEmbeddingModel.TaskType.RETRIEVAL_DOCUMENT)
+                .taskType(taskType)
                 .outputDimensionality(1024)
                 .httpClientBuilder(JdkHttpClient.builder())
                 .build();
