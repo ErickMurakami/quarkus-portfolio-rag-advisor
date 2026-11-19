@@ -15,6 +15,7 @@ import dev.erickmurakami.portfolio.application.dto.AdvisorResponse;
 import dev.erickmurakami.portfolio.application.dto.PortfolioSource;
 import dev.erickmurakami.portfolio.application.dto.PortfolioTip;
 import dev.erickmurakami.portfolio.application.dto.RetrievedChunk;
+import dev.erickmurakami.portfolio.domain.enums.AccessScope;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -41,7 +42,8 @@ public class PortfolioAdvisorService {
                     List.of());
         }
 
-        String prompt = buildPrompt(question, chunks);
+        Map<String, String> aliases = repositoryAliases(chunks);
+        String prompt = buildPrompt(question, chunks, aliases);
         AdvisorDraft draft = parse(ai.analyse(prompt));
 
         Map<String, PortfolioSource> sources = new LinkedHashMap<>();
@@ -49,9 +51,11 @@ public class PortfolioAdvisorService {
         for (RetrievedChunk chunk : chunks) {
             String reference = chunk.sourceReference();
 
+            boolean privateRepo = chunk.accessScope() == AccessScope.PRIVATE;
+
             sources.putIfAbsent(reference, new PortfolioSource(
-                    repositoryName(reference),
-                    reference,
+                    aliases.get(reference),
+                    privateRepo ? null : reference,
                     chunk.similarity()));
         }
 
@@ -82,7 +86,7 @@ public class PortfolioAdvisorService {
                 List.copyOf(sources.values()));
     }
 
-    private String buildPrompt(String question, List<RetrievedChunk> chunks) {
+    private String buildPrompt(String question, List<RetrievedChunk> chunks, Map<String, String> aliases) {
         StringBuilder prompt = new StringBuilder();
 
         prompt.append("Developer question:\n")
@@ -95,7 +99,7 @@ public class PortfolioAdvisorService {
             prompt.append("Evidence ")
                     .append(i + 1)
                     .append("\nRepository: ")
-                    .append(repositoryName(chunk.sourceReference()))
+                    .append(aliases.get(chunk.sourceReference()))
                     .append("\nContent:\n")
                     .append(chunk.content())
                     .append("\n\n");
@@ -134,5 +138,26 @@ public class PortfolioAdvisorService {
 
         }
         return reference;
+    }
+
+    private Map<String, String> repositoryAliases(List<RetrievedChunk> chunks) {
+        Map<String, String> aliases = new LinkedHashMap<>();
+        int privateCount = 0;
+
+        for (RetrievedChunk chunk : chunks) {
+            String reference = chunk.sourceReference();
+
+            if (aliases.containsKey(reference)) {
+                continue;
+            }
+
+            if (chunk.accessScope() == AccessScope.PRIVATE) {
+                aliases.put(reference, "Private Repository " + ++privateCount);
+            } else {
+                aliases.put(reference, repositoryName(reference));
+            }
+        }
+
+        return aliases;
     }
 }
