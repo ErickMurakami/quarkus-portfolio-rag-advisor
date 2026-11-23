@@ -23,12 +23,20 @@ public class PortfolioRetrievalService {
     DocumentChunkRepository repository;
 
     public List<RetrievedChunk> retrieve(Long devId, String question) {
+        return search(devId, question, false);
+    }
+
+    public List<RetrievedChunk> retrievePublic(Long devId, String question) {
+        return search(devId, question, true);
+    }
+
+    private List<RetrievedChunk> search(Long devId, String question, boolean publicOnly) {
         if (question == null || question.isBlank()) {
             throw new IllegalArgumentException("Question cannot be blank");
         }
 
         float[] vector = model.embed(TextSegment.from(question.trim())).content().vector();
 
-        return repository.searchSimilar(devId, vector, TOP_K);
+        return repository.searchSimilar(devId, vector, TOP_K, publicOnly);
     }
 }

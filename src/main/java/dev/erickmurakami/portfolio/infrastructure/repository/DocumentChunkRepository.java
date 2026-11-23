@@ -37,6 +37,10 @@ public class DocumentChunkRepository implements PanacheRepository<DocumentChunk>
     }
 
     public List<RetrievedChunk> searchSimilar(Long devId, float[] queryVector, int limit) {
+        return searchSimilar(devId, queryVector, limit, false);
+    }
+
+    public List<RetrievedChunk> searchSimilar(Long devId, float[] queryVector, int limit, boolean publicOnly) {
         if (devId == null) {
             throw new IllegalArgumentException("Developer ID cannot be null");
         }
@@ -58,13 +62,21 @@ public class DocumentChunkRepository implements PanacheRepository<DocumentChunk>
                 .collect(Collectors.joining(",", "[", "]"));
 
         String sql = """
-                        SELECT id, content, source_reference, access_scope,
-                            1 - (embedding <=> CAST(? AS vector)) AS similarity
-                        FROM document_chunk
-                        WHERE dev_id = ?
+                SELECT
+                    id,
+                    content,
+                    source_reference,
+                    access_scope,
+                    1 - (embedding <=> CAST(? AS vector))
+                        AS similarity
+                FROM document_chunk
+                WHERE dev_id = ?
+                """ +
+                (publicOnly ? " AND access_scope = 'PUBLIC'\n" : "") +
+                """
                         ORDER BY embedding <=> CAST(? AS vector)
                         LIMIT ?
-                """;
+                        """;
 
         List<RetrievedChunk> results = new ArrayList<>();
 
