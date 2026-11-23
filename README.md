@@ -103,3 +103,17 @@ chunks and use the backend's public-only filter. Cosine similarity is not confid
 The UI never reconstructs a source URL from a repository name or private alias.
 Profile requests use the existing GET endpoint; changing developer ID clears old
 analysis and evidence and reloads the declared skills automatically.
+
+### UI checks
+
+Run `./mvnw clean verify` for the Java suite, including real HTTP checks for the
+Qute page, CSS, JavaScript and HTTP 403 on the Advisor outside dev mode. The page
+test profile disables ORM, Flyway migrations, Dev Services and background ingestion;
+it does not query a real database or call AI providers.
+
+Run `node --test --experimental-test-isolation=none src/test/js/app.test.cjs` with
+Node 22+ for dependency-free interaction tests with synthetic API responses. These
+exercise profile refresh/races, input validation, safe text and source rendering,
+loading/error/empty states, comparison and request cancellation. They use a DOM
+double and do not establish real browser layout or live Gemini/Groq integration.
+The pgvector repository tests require Docker and report skipped when unavailable.

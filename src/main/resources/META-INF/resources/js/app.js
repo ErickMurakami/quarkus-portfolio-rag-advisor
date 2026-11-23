@@ -86,6 +86,7 @@ async function loadProfile() {
   const version = ++profileVersion;
   profileController?.abort();
   byId('profile-result').replaceChildren();
+  byId('profile-result').setAttribute('aria-busy', 'false');
   let id;
   try { id = developerId(); }
   catch (error) { status('profile-status', error.message, true); return; }
