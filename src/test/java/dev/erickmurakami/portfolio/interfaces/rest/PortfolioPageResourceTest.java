@@ -21,6 +21,8 @@ class PortfolioPageResourceTest {
         given().when().get("/").then().statusCode(200).contentType("text/html")
                 .body(containsString("PORTFOLIO"), containsString("id=\"developer-id\""),
                         containsString("Declared skills"), containsString("id=\"retrieval-form\""),
+                        containsString("role=\"tablist\""), containsString("id=\"language-toggle\""),
+                        containsString("id=\"selected-developer\""),
                         containsString("Advisor is unavailable in this environment"),
                         not(containsString("id=\"advisor-form\"")), not(containsString("{#")));
     }
@@ -42,6 +44,12 @@ class PortfolioPageResourceTest {
         given().when().get("/js/app.js").then().statusCode(200)
                 .contentType(anyOf(containsString("javascript"), containsString("ecmascript")))
                 .body(containsString("/api/v1/developers/"), containsString("textContent"));
+    }
+
+    @Test
+    void shouldServeLanguageDictionaryWithoutDeveloperData() {
+        given().when().get("/js/i18n.js").then().statusCode(200)
+                .body(containsString("Perfil do desenvolvedor"), containsString("function translated"));
     }
 
     @Test

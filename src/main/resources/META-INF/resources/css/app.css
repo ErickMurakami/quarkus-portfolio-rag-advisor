@@ -124,3 +124,115 @@ footer { display: flex; justify-content: space-between; gap: 1rem; border-top: 1
 .evidence-panel summary { cursor: pointer; color: var(--accent); }
 .evidence-panel .prose { font: .875rem/1.75 var(--mono); max-height: 32rem; overflow: auto; }
 @media (max-width: 850px) { .comparison { grid-template-columns: 1fr; } }
+
+/* One workspace: the desktop shell stays fixed while each work panel scrolls. */
+.application { height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; }
+.application .wrap { width: min(1440px, calc(100% - 3rem)); }
+.application header { background: var(--background); z-index: 3; }
+.application .topbar { gap: 1rem; padding-block: .75rem 0; }
+.header-actions { display: flex; gap: .5rem; margin-left: auto; }
+.header-actions button { font-size: .875rem; padding: .4rem .75rem; }
+.application .brand { margin-right: 0; }
+.application .built { margin: 0; }
+.application nav { width: 100%; gap: .5rem; }
+.application [role='tab'] { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; color: var(--muted); padding: .7rem 1rem; font-size: 1rem; }
+.application [role='tab'][aria-selected='true'] { color: var(--accent); border-bottom-color: var(--accent); }
+.workspace-context { display: flex; align-items: center; gap: 2rem; padding-block: .9rem; border-bottom: 1px solid var(--border); }
+.developer-selector { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.developer-selector label { margin: 0; }
+.developer-selector input { width: 12rem; padding: .5rem .75rem; }
+.developer-selector button { padding: .5rem .75rem; font-size: .9rem; }
+.selected-context { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; font-size: .9375rem; }
+.selected-context span { font-size: .875rem; }
+.workspace { min-height: 0; padding-block: 1.25rem; display: flex; }
+.application main > .tab-panel { border: 0; padding: 0; min-width: 0; min-height: 0; width: 100%; }
+.tab-panel { display: flex; flex-direction: column; }
+#profile { overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding-right: .5rem; }
+.profile-intro { margin-bottom: 1.5rem; }
+.profile-intro h1 { font-size: clamp(2.2rem, 4vw, 4rem); margin: .6rem 0; }
+.profile-intro .intro { font-size: 1rem; margin: .6rem 0 1rem; max-width: none; }
+.application .section-heading { margin-bottom: 1rem; flex-shrink: 0; }
+.application h2 { font-size: 1.5rem; }
+.application .eyebrow { margin-bottom: .3rem; }
+.workbench { flex: 1; display: grid; grid-template-columns: minmax(280px, .8fr) minmax(0, 1.2fr); gap: 1.25rem; min-height: 0; }
+.scroll-panel { min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding-right: .4rem; }
+.output > [role='status'] { margin-top: 0; }
+.application .card { padding: 1.25rem; }
+.application textarea { min-height: 110px; }
+.application .notice { margin-top: 0; font-size: .9375rem; }
+.application .comparison { grid-template-columns: 1fr; }
+.application footer { padding-block: .6rem; font-size: .8125rem; }
+@media (max-width: 700px) {
+  .application { height: auto; min-height: 100dvh; display: flex; flex-direction: column; overflow: visible; }
+  .application header { position: sticky; top: 0; }
+  .application .wrap { width: calc(100% - 2rem); }
+  .application .topbar { flex-wrap: wrap; }
+  .application .built { display: none; }
+  .application nav { order: 3; gap: 0; }
+  .application [role='tab'] { font-size: .875rem; padding: .65rem .5rem; }
+  .workspace-context { align-items: flex-start; flex-direction: column; gap: .6rem; }
+  .developer-selector { gap: .5rem; }
+  .developer-selector input { width: 8rem; flex: 1; }
+  .workspace { display: block; flex: 1; }
+  .workbench { display: block; }
+  #profile, .scroll-panel { overflow: visible; padding-right: 0; }
+  .output { margin-top: 1.5rem; }
+  .application .section-heading { flex-direction: row; align-items: center; }
+  .application footer { flex-direction: row; }
+}
+
+/* Compact shared selection: no separate developer toolbar consumes panel height. */
+.application .developer-selector { margin-left: auto; gap: .5rem; }
+.application .developer-selector label { font-size: .75rem; letter-spacing: .04em; }
+.application .developer-selector input { width: 5.5rem; padding: .35rem .5rem; font-size: .9375rem; }
+.application .developer-selector button { font-size: .8125rem; padding: .35rem .6rem; }
+.application .header-actions { margin-left: .5rem; }
+.application nav { width: auto; margin-right: auto; }
+.application .selected-context { margin-left: auto; font-size: .8125rem; line-height: 1.35; max-width: 28rem; }
+.application .selected-context span { font-size: .75rem; }
+.language-toggle { display: inline-flex; align-items: center; justify-content: center; min-width: 42px; min-height: 36px; }
+.language-toggle img { display: block; border-radius: 2px; }
+@media (min-width: 701px) {
+  .application .topbar { display: grid; grid-template-columns: auto 1fr auto; column-gap: 1.25rem; row-gap: .25rem; }
+  .application .topbar > .built { display: none; }
+  .application .brand { grid-column: 1; }
+  .application .developer-selector { grid-column: 2; justify-content: flex-end; }
+  .application .header-actions { grid-column: 3; }
+  .application nav { grid-column: 1 / 3; grid-row: 2; }
+  .application .selected-context { grid-column: 3; grid-row: 2; max-width: 21rem; text-align: right; }
+  .application .selected-context span { display: none; }
+  .application .workspace { padding-block: .85rem; }
+}
+@media (max-width: 700px) {
+  .application .developer-selector { order: 4; width: 100%; margin: 0; padding-bottom: .7rem; }
+  .application .developer-selector input { max-width: 8rem; }
+  .application nav { width: 100%; order: 3; }
+  .application .selected-context { display: none; }
+  .application .header-actions { margin-left: auto; }
+}
+
+/* The profile has no page-sized introduction: only long skill data may scroll. */
+.application .brand { display: flex; flex-direction: column; gap: .1rem; line-height: 1.15; }
+.application .brand-kicker { font: 500 .6875rem/1.4 var(--mono); color: var(--muted); letter-spacing: .05em; text-transform: uppercase; }
+.application .brand-title { font: 400 1.9rem/1 var(--display); color: var(--text); letter-spacing: .025em; }
+.application .brand-title b { font-weight: 400; color: var(--accent); }
+.application #profile { overflow: hidden; padding-right: 0; }
+.application #profile > .card { overflow: auto; min-height: 0; flex: 1; scrollbar-gutter: stable; }
+.application #profile > .note { flex-shrink: 0; margin: .65rem 0 0; }
+.application footer { align-items: center; }
+.application footer .app-technologies { gap: .3rem; }
+.application footer .app-technologies span { font-size: .6875rem; padding: .05rem .35rem; }
+@media (max-width: 700px) {
+  .application .brand-kicker { font-size: .6rem; letter-spacing: 0; }
+  .application .brand-title { font-size: 1.5rem; }
+  .application #profile, .application #profile > .card { overflow: visible; }
+  .application footer { flex-wrap: wrap; }
+  .application footer .app-technologies { order: 3; width: 100%; }
+}
+
+#profile-result { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem 1.5rem; }
+#profile-result > h3, #profile-result > p { grid-column: 1 / -1; margin: .2rem 0; }
+.skill-group { min-width: 0; }
+.skill-group h4 { margin: .75rem 0 .5rem; }
+@media (max-width: 1000px) { #profile-result { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { #profile-result { grid-template-columns: 1fr; } }

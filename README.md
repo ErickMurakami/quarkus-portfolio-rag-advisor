@@ -117,3 +117,62 @@ exercise profile refresh/races, input validation, safe text and source rendering
 loading/error/empty states, comparison and request cancellation. They use a DOM
 double and do not establish real browser layout or live Gemini/Groq integration.
 The pgvector repository tests require Docker and report skipped when unavailable.
+
+
+### Presentation workspace (PT / EN)
+
+The UI uses a single `100dvh` desktop workspace. The header, developer selector and
+three tabs remain visible. Controls and output scroll independently. Narrow screens
+allow document scrolling for readability. Tab switching retains
+form inputs, scroll positions and results without fetching again. Keyboard navigation
+supports Left/Right, Home and End; Tab moves into the selected content panel.
+
+Portuguese is the default UI language. The flag control follows the GitHub Pages pattern: the current language’s flag,
+with an accessible label and tooltip describing the switch. It changes interface labels,
+status messages and help text while retaining context. It never translates developer
+data, repository content or model-generated analysis. Ask the Advisor in Portuguese
+for a Portuguese answer (the existing model prompt follows the question's language).
+Only theme/language preferences are persisted; API responses are held in memory.
+
+Open `http://localhost:8000/?developerId=1` with an existing developer ID. Selection
+loads `GET /api/v1/developers/{id}` and is shared by all tabs. Editing the ID updates
+the URL, aborts old requests and clears results from the previous developer. Selection
+resolution is isolated in `selectionFromUrl`; `?github=` is reserved for a future
+supported lookup and currently makes no request. No username endpoint was added.
+
+The Qute HTTP test profile supplies non-empty **synthetic** Gemini/GitHub/Groq values
+to permit CDI startup without credentials. Production configuration is unchanged.
+The GitHub Actions fix must still be verified remotely after the next user push.
+
+
+## Telas de exemplo
+
+Capturas da interface Qute no Firefox. **Perfil e evidências das imagens são dados
+sintéticos de teste**, injetados apenas durante a captura; não são resultados reais
+nem dados fixos da aplicação. Não foram feitas chamadas a Gemini, Groq ou GitHub.
+
+### Perfil — português
+
+Cabeçalho compacto, seleção compartilhada e competências declaradas por categoria.
+A página desktop permanece dentro da viewport; listas longas rolam dentro do card.
+
+![Perfil em português](docs/images/profile-pt.png)
+
+### Retrieval Explorer — English
+
+Comparação dos modos com a mesma pergunta. Os resultados são preservados entre abas.
+
+![Evidence comparison in English](docs/images/retrieval-en.png)
+
+### Advisor — restrição local
+
+Captura fora do modo de desenvolvimento: a análise permanece indisponível. O aviso
+não representa autenticação nem garantia de confidencialidade.
+
+![Advisor restrito à demonstração local](docs/images/advisor-local-only-pt.png)
+
+### Tela pequena
+
+A versão mobile prioriza legibilidade e permite rolagem quando necessário.
+
+<img src="docs/images/profile-mobile-pt.png" alt="Perfil em português na versão mobile" width="390">

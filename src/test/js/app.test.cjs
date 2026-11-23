@@ -21,6 +21,8 @@ class Node {
   append(...nodes) { this.children.push(...nodes); }
   replaceChildren(...nodes) { this._text = ''; this.children = nodes; }
   setAttribute(name, value) { this.attributes[name] = value; }
+  getAttribute(name) { return this.attributes[name] ?? null; }
+  dispatchEvent(event) { void this.emit(event.type); }
   addEventListener(name, handler) { (this.listeners[name] ??= []).push(handler); }
   async emit(name, event = {}) {
     await Promise.all((this.listeners[name] ?? []).map(handler => handler({ preventDefault() {}, ...event })));
@@ -29,12 +31,16 @@ class Node {
   querySelectorAll(selector) {
     const matches = node => selector === '[type="submit"]' ? node.type === 'submit'
       : selector === '[data-question]' ? node.dataset.question != null
-      : selector === '[name="mode"]:checked' ? node.name === 'mode' && node.checked : false;
+      : selector === '[name="mode"]:checked' ? node.name === 'mode' && node.checked
+      : selector === '[name="mode"]' ? node.name === 'mode'
+      : selector === '[data-i18n]' ? node.dataset.i18n != null
+      : selector === '[data-i18n-placeholder]' ? node.dataset.i18nPlaceholder != null
+      : selector === '[aria-label]' ? node.attributes['aria-label'] != null : false;
     return this.children.flatMap(node => [...(matches(node) ? [node] : []), ...node.querySelectorAll(selector)]);
   }
   querySelector(selector) { return this.querySelectorAll(selector)[0] ?? null; }
 }
-function environment({ local = true, fetch = async () => ({ ok: true, json: async () => ({}) }) } = {}) {
+function environment({ local = true, language = 'en', url = 'http://localhost/', fetch = async () => ({ ok: true, json: async () => ({}) }) } = {}) {
   const nodes = new Map();
   for (const file of ['index.html', 'partials/advisor.html', 'partials/retrieval.html']) {
     const html = readFileSync(path.join(root, 'templates', file), 'utf8');
@@ -49,6 +55,10 @@ function environment({ local = true, fetch = async () => ({ ok: true, json: asyn
   const mode = new Node('input'); mode.name = 'mode'; mode.value = 'FOCUSED'; mode.checked = true;
   nodes.get('retrieval-form').append(mode, button('search'), button('compare'));
   const document = new Node();
+  document.children = [...nodes.values()];
+  const window = new Node();
+  window.location = { href: url };
+  window.history = { replaceState: (_, __, value) => { window.location.href = String(value); } };
   document.getElementById = id => nodes.get(id) ?? null;
   document.createElement = tag => new Node(tag);
   document.documentElement = new Node('html');
@@ -56,16 +66,18 @@ function environment({ local = true, fetch = async () => ({ ok: true, json: asyn
   const timers = new Map(); let timerId = 0;
   const calls = [];
   const context = vm.createContext({
-    document, Event, URL, AbortController, AbortSignal,
+    document, window, Event, URL, AbortController, AbortSignal,
     matchMedia: () => ({ matches: false }),
-    localStorage: { getItem: () => null, setItem() {} },
+    localStorage: { getItem: key => key === 'portfolio-language' ? language : null, setItem() {} },
     setTimeout: (fn, delay) => { timers.set(++timerId, { fn, delay }); return timerId; },
     clearTimeout: id => timers.delete(id),
     fetch: (...args) => { calls.push(args); return fetch(...args); }
   });
+  vm.runInContext(readFileSync(path.join(root, 'META-INF/resources/js/i18n.js'), 'utf8'), context);
   vm.runInContext(script, context);
   return {
-    nodes, calls, document,
+    nodes, calls, document, window,
+    state: () => JSON.parse(vm.runInContext('JSON.stringify(appState)', context)),
     get: id => nodes.get(id),
     runDebounce: async () => {
       for (const [id, timer] of [...timers]) if (timer.delay === 350) { timers.delete(id); await timer.fn(); }
@@ -228,4 +240,74 @@ test('production page without advisor form still supports theme and retrieval', 
   assert.equal(env.document.documentElement.dataset.theme, 'light');
   assert.equal(env.calls.length, 0);
   assert.match(env.get('theme-toggle').textContent, /Dark theme/);
+});
+
+test('switching tabs preserves form values, API results and shared developer selection', async () => {
+  const env = environment({ fetch: async () => response({ answer: 'Synthetic analysis', strengths: [], tips: [], sources: [] }) });
+  selectDeveloper(env, '12');
+  env.get('advisor-question').value = 'Saved question';
+  await env.get('advisor-question').emit('input');
+  await submit(env, 'advisor-form');
+  const result = env.get('advisor-result').children[0];
+  for (const tab of ['retrieval', 'profile', 'advisor']) await env.get(`tab-${tab}`).emit('click');
+  assert.equal(env.get('advisor-result').children[0], result);
+  assert.equal(env.get('advisor-question').value, 'Saved question');
+  assert.equal(env.calls.length, 1);
+  assert.equal(env.state().activeTab, 'advisor');
+  assert.equal(env.state().developerId, '12');
+  assert.equal(env.state().advisor.answer, 'Synthetic analysis');
+  assert.equal(env.state().forms.advisorQuestion, 'Saved question');
+  assert.equal(env.get('advisor').hidden, false);
+  assert.equal(env.get('profile').hidden, true);
+});
+
+test('tabs support arrow keys, Home and End with managed focus', async () => {
+  const env = environment();
+  await env.get('tab-profile').emit('keydown', { key: 'ArrowRight' });
+  assert.equal(env.state().activeTab, 'retrieval');
+  assert.equal(env.get('tab-retrieval').focused, true);
+  assert.equal(env.get('tab-profile').attributes['aria-selected'], 'false');
+  await env.get('tab-retrieval').emit('keydown', { key: 'End' });
+  assert.equal(env.state().activeTab, 'advisor');
+  await env.get('tab-advisor').emit('keydown', { key: 'Home' });
+  assert.equal(env.state().activeTab, 'profile');
+});
+
+test('developerId URL selection loads the real profile and retains unrelated query parameters', async () => {
+  const env = environment({ url: 'http://localhost/?developerId=21&view=presentation',
+    fetch: async () => response({ id: 21, fullName: 'Synthetic Presenter', githubUsername: 'synthetic', skills: [] }) });
+  await env.runDebounce();
+  assert.equal(env.calls[0][0], '/api/v1/developers/21');
+  assert.equal(env.get('developer-id').value, '21');
+  assert.equal(env.state().profile.fullName, 'Synthetic Presenter');
+  assert.match(env.get('selected-developer').textContent, /Synthetic Presenter · @synthetic/);
+  selectDeveloper(env, '22'); await env.get('developer-id').emit('input');
+  assert.match(env.window.location.href, /developerId=22/);
+  assert.match(env.window.location.href, /view=presentation/);
+  assert.equal(env.state().profile, null);
+  const unsupported = environment({ url: 'http://localhost/?github=synthetic' });
+  await unsupported.runDebounce();
+  assert.equal(unsupported.calls.length, 0);
+});
+
+test('Portuguese is the default; changing language preserves unmodified API content and avoids refetching', async () => {
+  const env = environment({ language: null, fetch: async () => response({ answer: 'Analysis', strengths: ['Tools'], tips: [], sources: [] }) });
+  assert.equal(env.document.documentElement.lang, 'pt-BR');
+  assert.equal(env.get('language-flag').src, '/flags/brazil.svg');
+  assert.match(env.get('language-toggle').attributes['aria-label'], /Mudar para inglês/);
+  selectDeveloper(env); env.get('advisor-question').value = 'Minha pergunta';
+  await submit(env, 'advisor-form');
+  assert.match(env.get('advisor-result').textContent, /Pontos fortes demonstrados/);
+  assert.ok(allNodes(env.get('advisor-result')).some(node => node.tagName === 'p' && node.textContent === 'Analysis'));
+  assert.match(env.get('advisor-result').textContent, /Tools/);
+  await env.get('language-toggle').emit('click');
+  assert.equal(env.document.documentElement.lang, 'en');
+  assert.equal(env.get('language-flag').src, '/flags/united-kingdom.svg');
+  assert.match(env.get('language-toggle').attributes['aria-label'], /Switch to Portuguese/);
+  assert.match(env.get('advisor-result').textContent, /Demonstrated strengths/);
+  assert.equal(env.calls.length, 1);
+  assert.equal(env.get('advisor-question').value, 'Minha pergunta');
+  await env.get('language-toggle').emit('click');
+  assert.match(env.get('advisor-status').textContent, /Análise concluída/);
+  assert.equal(env.state().language, 'pt');
 });
