@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore engineering portfolios with semantic evidence and grounded analysis.">
+  <title>Portfolio RAG Advisor</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <script src="/js/app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header>
+    <div class="wrap topbar">
+      <a class="brand" href="/">Portfolio <span>RAG</span> Advisor</a>
+      <nav aria-label="Main navigation"><a href="#profile">Profile</a><a href="#advisor">Advisor</a><a href="#retrieval">Retrieval Explorer</a></nav>
+      <button id="theme-toggle" class="secondary" type="button" aria-label="Switch to light theme">Light theme</button>
+    </div>
+  </header>
+  <main id="main" class="wrap">
+    <section class="hero" aria-labelledby="hero-title">
+      <p class="eyebrow">Engineering, backed by evidence <span class="built">Built with Quarkus</span></p>
+      <h1 id="hero-title">PORTFOLIO<br><span>RAG ADVISOR</span></h1>
+      <p class="intro">Explore your engineering portfolio through semantic search and AI-powered analysis.</p>
+      <div class="tags" aria-label="Application technologies"><span>JAVA 21</span><span>QUARKUS</span><span>LANGCHAIN4J</span><span>GEMINI</span><span>GROQ</span><span>PGVECTOR</span></div>
+    </section>
+    <section id="profile" aria-labelledby="profile-title">
+      <div class="section-heading"><div><p class="eyebrow">Your starting point</p><h2 id="profile-title">Developer Profile</h2></div><span class="badge">Declared skills</span></div>
+      <div class="card profile-layout">
+        <div>
+          <label for="developer-id">Developer ID</label>
+          <input id="developer-id" name="developerId" type="text" inputmode="numeric" pattern="[1-9][0-9]*" placeholder="Enter an existing ID" autocomplete="off" aria-describedby="developer-help">
+          <p id="developer-help" class="muted">Select an existing developer to explore their portfolio.</p>
+          <button id="profile-refresh" class="secondary" type="button">Refresh profile</button>
+        </div>
+        <div>
+          <p id="profile-status" role="status" aria-live="polite">Enter a developer ID to load their profile.</p>
+          <div id="profile-result"></div>
+        </div>
+      </div>
+      <p class="note">The base stack is declared by the developer. These skills are not verified GitHub evidence. The application technologies above describe this tool, not the developer.</p>
+    </section>
+    <section id="advisor" aria-labelledby="advisor-title">
+      <div class="section-heading"><div><p class="eyebrow">From evidence to direction</p><h2 id="advisor-title">Portfolio Advisor</h2></div><span class="badge">Local demo only</span></div>
+      <p class="note">Analysis interface coming next.</p>
+    </section>
+    <section id="retrieval" aria-labelledby="retrieval-title">
+      <div class="section-heading"><div><p class="eyebrow">Inspect the evidence</p><h2 id="retrieval-title">Retrieval Explorer</h2></div><span class="badge">Public sources only</span></div>
+      <p class="note">Semantic evidence explorer coming next.</p>
+    </section>
+  </main>
+  <footer class="wrap"><span>Portfolio RAG Advisor</span><span>Evidence before assumptions.</span></footer>
+  <noscript><p class="wrap notice">Enable JavaScript to load profiles and send questions. No analysis runs automatically.</p></noscript>
+</body>
+</html>
