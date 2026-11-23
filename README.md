@@ -67,3 +67,28 @@ If you want to learn more about building native executables, please consult <htt
 Easily start your REST Web Services
 
 [Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+
+## Portfolio web interface
+
+Open <http://localhost:8000/> after starting Quarkus. The Qute page and its CSS/JavaScript
+are served by the same application; no frontend server or build is needed. Fonts use
+Google Fonts when available, with local system fallbacks. The page contains no initial
+profile or evidence data. Select an existing developer ID to fetch the declared base
+stack from `GET /api/v1/developers/{id}`. Declared skills are not verified GitHub evidence.
+
+### Local Advisor and privacy
+
+The full Advisor form **and REST operation** are available only in the Quarkus `dev`
+launch mode. Outside that mode, `/api/v1/developers/{id}/advisor` returns HTTP 403
+before calling the analysis service. This is a demo restriction, not authentication.
+Run a local demonstration with `./mvnw quarkus:dev -Dquarkus.http.host=127.0.0.1`;
+do not expose dev mode through a public listener, tunnel, proxy or port forward.
+
+The Advisor deliberately retains its internal retrieval behavior: evidence can include
+private repositories and is sent to the configured AI provider. Aliases and missing
+source URLs do **not** guarantee confidentiality. The generated answer, strengths and
+tip text can contain private names, URLs, client information or internal identifiers.
+Use only synthetic data or data you are authorized to send. Do not record or share a
+session containing private evidence. Proper authorization or data isolation is required
+before enabling a hosted Advisor. No credentials or AI calls are made directly by the
+browser; it calls the existing backend. Model text is displayed as plain text.

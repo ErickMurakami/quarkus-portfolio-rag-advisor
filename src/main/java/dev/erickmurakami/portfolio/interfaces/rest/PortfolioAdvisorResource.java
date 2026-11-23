@@ -3,6 +3,8 @@ package dev.erickmurakami.portfolio.interfaces.rest;
 import dev.erickmurakami.portfolio.application.dto.AdvisorRequest;
 import dev.erickmurakami.portfolio.application.dto.AdvisorResponse;
 import dev.erickmurakami.portfolio.application.services.PortfolioAdvisorService;
+import io.quarkus.runtime.LaunchMode;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -22,6 +24,9 @@ public class PortfolioAdvisorResource {
 
     @POST
     public AdvisorResponse advise(@PathParam("devId") Long devId, @Valid AdvisorRequest request) {
+        if (LaunchMode.current() != LaunchMode.DEVELOPMENT) {
+            throw new ForbiddenException("Advisor is restricted to the local development demo");
+        }
         return service.advise(devId, request.question().trim());
     }
 }

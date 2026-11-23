@@ -1,0 +1,17 @@
+<p class="notice">Local demonstration only. Analysis can use private repository content. Repository aliases do not prevent private information from appearing in generated text. Use only data you are authorized to send to the AI provider.</p>
+{#if localAdvisor}
+<form id="advisor-form" class="card" aria-describedby="advisor-help">
+  <label for="advisor-question">What would you like to improve?</label>
+  <textarea id="advisor-question" name="question" required placeholder="How can I better demonstrate my backend engineering skills?"></textarea>
+  <p id="advisor-help" class="note">Uses the developer ID selected above. Your question and retrieved evidence are sent to the configured AI provider.</p>
+  <div class="examples" aria-label="Example advisor questions">
+    <button type="button" class="example" data-question="Which backend engineering strengths are supported by my repositories?">Identify strengths</button>
+    <button type="button" class="example" data-question="How can I make my portfolio documentation more useful?">Improve documentation</button>
+  </div>
+  <button type="submit">Analyze portfolio</button>
+</form>
+<p id="advisor-status" role="status" aria-live="polite">Select a developer and ask a question to begin.</p>
+<div id="advisor-result" aria-busy="false"></div>
+{#else}
+<div class="card"><h3>Advisor is unavailable in this environment</h3><p>The complete analysis is enabled only in the local Quarkus development profile. Retrieval Explorer below uses public sources.</p></div>
+{/if}
