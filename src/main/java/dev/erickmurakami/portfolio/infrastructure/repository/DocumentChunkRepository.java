@@ -139,6 +139,7 @@ public class DocumentChunkRepository implements PanacheRepository<DocumentChunk>
                     access_scope, similarity
                 FROM ranked
                 WHERE repository_rank <= 2
+                AND similarity >= 0.65
                 ORDER BY similarity DESC, id
                 LIMIT ?
                 """;
