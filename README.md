@@ -92,3 +92,14 @@ Use only synthetic data or data you are authorized to send. Do not record or sha
 session containing private evidence. Proper authorization or data isolation is required
 before enabling a hosted Advisor. No credentials or AI calls are made directly by the
 browser; it calls the existing backend. Model text is displayed as plain text.
+
+### Public evidence explorer
+
+`Search Evidence` uses `POST /api/v1/developers/{id}/retrieval?mode=FOCUSED|OVERVIEW`.
+`Compare both modes` sends the same developer ID and question to both modes and shows
+independent results or errors. FOCUSED has no similarity cutoff. OVERVIEW accepts at
+most two chunks per source with similarity at least 0.65. Both return at most eight
+chunks and use the backend's public-only filter. Cosine similarity is not confidence.
+The UI never reconstructs a source URL from a repository name or private alias.
+Profile requests use the existing GET endpoint; changing developer ID clears old
+analysis and evidence and reloads the declared skills automatically.

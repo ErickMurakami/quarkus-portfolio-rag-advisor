@@ -225,3 +225,80 @@ if (advisorForm) {
     status('advisor-status', 'Developer changed. Run a new analysis.');
   });
 }
+
+let retrievalController;
+let retrievalVersion = 0;
+const retrievalForm = byId('retrieval-form');
+function clearRetrieval() {
+  ++retrievalVersion;
+  retrievalController?.abort();
+  byId('retrieval-results').replaceChildren();
+  byId('retrieval-results').setAttribute('aria-busy', 'false');
+  retrievalForm.querySelectorAll('[type="submit"]').forEach(button => { button.disabled = false; });
+  status('retrieval-status', 'Inputs changed. Search again to refresh evidence.');
+}
+function renderEvidence(panel, chunks, mode) {
+  if (!Array.isArray(chunks)) throw new Error('The server returned an unreadable evidence response.');
+  if (!chunks.length) {
+    panel.append(element('p', mode === 'OVERVIEW'
+      ? 'No public evidence met the OVERVIEW similarity threshold (0.65). The developer may also have no indexed public documents.'
+      : 'No public evidence was found. This developer may have no indexed public documents.', 'notice'));
+    return;
+  }
+  const repositories = new Set(chunks.map(chunk => chunk.sourceReference));
+  panel.append(element('p', `${chunks.length} chunks · ${repositories.size} distinct repositories`, 'note'));
+  chunks.forEach(chunk => {
+    const card = element('article', null, 'card');
+    const heading = element('h3');
+    heading.append(sourceLink(chunk.repo, chunk.sourceReference));
+    card.append(heading, element('span', similarity(chunk.similarity), 'similarity'));
+    const details = element('details');
+    details.open = true;
+    details.append(element('summary', 'Evidence chunk'), element('p', chunk.content, 'prose'));
+    card.append(details);
+    panel.append(card);
+  });
+}
+retrievalForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  let id, body;
+  try { id = developerId(); body = questionBody('retrieval-question'); }
+  catch (error) { status('retrieval-status', error.message, true); return; }
+  const modes = event.submitter?.value === 'compare' ? ['FOCUSED', 'OVERVIEW'] : [retrievalForm.querySelector('[name="mode"]:checked').value];
+  const version = ++retrievalVersion;
+  retrievalController?.abort();
+  const controller = new AbortController();
+  retrievalController = controller;
+  const timeout = setTimeout(() => controller.abort(), 90000);
+  const results = byId('retrieval-results');
+  results.replaceChildren();
+  results.className = modes.length === 2 ? 'comparison' : '';
+  results.setAttribute('aria-busy', 'true');
+  retrievalForm.querySelectorAll('[type="submit"]').forEach(button => { button.disabled = true; });
+  status('retrieval-status', `Searching public evidence for developer ${id}…`);
+  const outcomes = await Promise.all(modes.map(async mode => {
+    const panel = element('section', null, 'evidence-panel');
+    panel.setAttribute('aria-label', `${mode} results`);
+    panel.append(element('h3', mode));
+    results.append(panel);
+    try {
+      const chunks = await request(`/api/v1/developers/${id}/retrieval?mode=${mode}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body, signal: controller.signal
+      });
+      if (version !== retrievalVersion) return false;
+      renderEvidence(panel, chunks, mode);
+      return true;
+    } catch (error) {
+      if (version === retrievalVersion) panel.append(element('p', error.name === 'AbortError' ? 'Search timed out. Please try again.' : error.message, 'error'));
+      return false;
+    }
+  }));
+  clearTimeout(timeout);
+  if (version === retrievalVersion) {
+    results.setAttribute('aria-busy', 'false');
+    retrievalForm.querySelectorAll('[type="submit"]').forEach(button => { button.disabled = false; });
+    status('retrieval-status', outcomes.every(Boolean) ? `Search complete · developer ${id} · public sources only` : 'Some evidence searches could not complete. Review the message for each mode.', !outcomes.every(Boolean));
+  }
+});
+byId('retrieval-question').addEventListener('input', clearRetrieval);
+document.addEventListener('developer-changed', clearRetrieval);

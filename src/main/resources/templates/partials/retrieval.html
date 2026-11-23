@@ -1,0 +1,20 @@
+<div class="card">
+  <form id="retrieval-form">
+    <label for="retrieval-question">What evidence are you looking for?</label>
+    <textarea id="retrieval-question" name="question" required placeholder="How do these repositories use testing and database migrations?"></textarea>
+    <p class="note">Uses the selected developer ID. Searches indexed public documents only; no model-generated answer.</p>
+    <fieldset class="mode-picker">
+      <legend>Retrieval mode</legend>
+      <label><input type="radio" name="mode" value="FOCUSED" checked> FOCUSED</label>
+      <label><input type="radio" name="mode" value="OVERVIEW"> OVERVIEW</label>
+    </fieldset>
+    <div class="actions"><button type="submit" value="search">Search Evidence</button><button type="submit" value="compare" class="secondary">Compare both modes</button></div>
+  </form>
+  <div class="mode-notes">
+    <p><strong>FOCUSED</strong> returns up to 8 chunks ranked by similarity, without a minimum similarity threshold.</p>
+    <p><strong>OVERVIEW</strong> returns up to 8 chunks, at most 2 per source, with cosine similarity ≥ 0.65.</p>
+    <p class="note">Cosine similarity is a ranking measure, not a percentage of certainty. Compare modes with the same question and developer.</p>
+  </div>
+</div>
+<p id="retrieval-status" role="status" aria-live="polite">Ask a question to inspect public evidence.</p>
+<div id="retrieval-results" aria-busy="false"></div>
