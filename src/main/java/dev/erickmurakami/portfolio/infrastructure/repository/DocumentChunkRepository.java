@@ -13,6 +13,7 @@ import javax.sql.DataSource;
 
 import dev.erickmurakami.portfolio.application.dto.RetrievedChunk;
 import dev.erickmurakami.portfolio.domain.enums.AccessScope;
+import dev.erickmurakami.portfolio.domain.enums.RetrievalMode;
 import dev.erickmurakami.portfolio.domain.models.DocumentChunk;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -36,56 +37,125 @@ public class DocumentChunkRepository implements PanacheRepository<DocumentChunk>
         flush();
     }
 
-    public List<RetrievedChunk> searchSimilar(Long devId, float[] queryVector, int limit) {
-        return searchSimilar(devId, queryVector, limit, false);
+    public List<RetrievedChunk> searchSimilar(
+            Long devId, float[] queryVector, int limit) {
+
+        return searchSimilar(
+                devId, queryVector, limit, false, RetrievalMode.FOCUSED);
     }
 
-    public List<RetrievedChunk> searchSimilar(Long devId, float[] queryVector, int limit, boolean publicOnly) {
+    public List<RetrievedChunk> searchSimilar(
+            Long devId,
+            float[] queryVector,
+            int limit,
+            boolean publicOnly) {
+
+        return searchSimilar(
+                devId, queryVector, limit, publicOnly,
+                RetrievalMode.FOCUSED);
+    }
+
+    public List<RetrievedChunk> searchSimilar(
+            Long devId,
+            float[] queryVector,
+            int limit,
+            boolean publicOnly,
+            RetrievalMode mode) {
+
         if (devId == null) {
-            throw new IllegalArgumentException("Developer ID cannot be null");
+            throw new IllegalArgumentException(
+                    "Developer ID cannot be null");
         }
+
+        if (mode == null) {
+            throw new IllegalArgumentException(
+                    "Retrieval mode cannot be null");
+        }
+
         if (queryVector == null || queryVector.length != 1024) {
-            throw new IllegalArgumentException("Query embedding must have 1024 dimensions");
+            throw new IllegalArgumentException(
+                    "Query embedding must have 1024 dimensions");
         }
+
         if (limit < 1 || limit > 20) {
-            throw new IllegalArgumentException("Limit must be between 1 and 20");
+            throw new IllegalArgumentException(
+                    "Limit must be between 1 and 20");
         }
 
         String vector = IntStream.range(0, queryVector.length)
                 .mapToObj(i -> {
                     float value = queryVector[i];
+
                     if (!Float.isFinite(value)) {
-                        throw new IllegalArgumentException("Embedding contains non-finite values");
+                        throw new IllegalArgumentException(
+                                "Embedding contains non-finite values");
                     }
+
                     return Float.toString(value);
                 })
                 .collect(Collectors.joining(",", "[", "]"));
 
-        String sql = """
-                SELECT
-                    id,
-                    content,
-                    source_reference,
-                    access_scope,
-                    1 - (embedding <=> CAST(? AS vector))
-                        AS similarity
-                FROM document_chunk
-                WHERE dev_id = ?
+        String baseSql = """
+                WITH scored AS (
+                    SELECT
+                        id,
+                        content,
+                        source_reference,
+                        access_scope,
+                        1 - (embedding <=> CAST(? AS vector))
+                            AS similarity
+                    FROM document_chunk
+                    WHERE dev_id = ?
                 """ +
-                (publicOnly ? " AND access_scope = 'PUBLIC'\n" : "") +
+                (publicOnly
+                        ? " AND access_scope = 'PUBLIC'\n"
+                        : "")
+                +
                 """
-                        ORDER BY embedding <=> CAST(? AS vector)
-                        LIMIT ?
+                        )
                         """;
+
+        String focusedSql = """
+                SELECT
+                    id, content, source_reference,
+                    access_scope, similarity
+                FROM scored
+                ORDER BY similarity DESC, id
+                LIMIT ?
+                """;
+
+        String overviewSql = """
+                , ranked AS (
+                    SELECT
+                        *,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY source_reference
+                            ORDER BY similarity DESC, id
+                        ) AS repository_rank
+                    FROM scored
+                )
+                SELECT
+                    id, content, source_reference,
+                    access_scope, similarity
+                FROM ranked
+                WHERE repository_rank <= 2
+                ORDER BY similarity DESC, id
+                LIMIT ?
+                """;
+
+        String sql = baseSql +
+                (mode == RetrievalMode.OVERVIEW
+                        ? overviewSql
+                        : focusedSql);
 
         List<RetrievedChunk> results = new ArrayList<>();
 
         try (Connection connection = dataSource.getConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
+
             statement.setString(1, vector);
             statement.setLong(2, devId);
-            statement.setString(3, vector);
-            statement.setInt(4, limit);
+            statement.setInt(3, limit);
 
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
@@ -93,15 +163,18 @@ public class DocumentChunkRepository implements PanacheRepository<DocumentChunk>
                             rs.getLong("id"),
                             rs.getString("content"),
                             rs.getString("source_reference"),
-                            AccessScope.valueOf(rs.getString("access_scope")),
+                            AccessScope.valueOf(
+                                    rs.getString("access_scope")),
                             rs.getDouble("similarity")));
                 }
             }
 
         } catch (SQLException ex) {
-            throw new IllegalStateException("Failed to search document embeddings", ex);
+            throw new IllegalStateException(
+                    "Failed to search document embeddings", ex);
         }
 
         return List.copyOf(results);
     }
+
 }

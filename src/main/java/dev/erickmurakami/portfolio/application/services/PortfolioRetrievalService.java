@@ -3,6 +3,7 @@ package dev.erickmurakami.portfolio.application.services;
 import java.util.List;
 
 import dev.erickmurakami.portfolio.application.dto.RetrievedChunk;
+import dev.erickmurakami.portfolio.domain.enums.RetrievalMode;
 import dev.erickmurakami.portfolio.infrastructure.ai.QueryEmbedding;
 import dev.erickmurakami.portfolio.infrastructure.repository.DocumentChunkRepository;
 import dev.langchain4j.data.segment.TextSegment;
@@ -23,20 +24,24 @@ public class PortfolioRetrievalService {
     DocumentChunkRepository repository;
 
     public List<RetrievedChunk> retrieve(Long devId, String question) {
-        return search(devId, question, false);
+        return search(devId, question, false, RetrievalMode.FOCUSED);
     }
 
     public List<RetrievedChunk> retrievePublic(Long devId, String question) {
-        return search(devId, question, true);
+        return search(devId, question, true, RetrievalMode.FOCUSED);
     }
 
-    private List<RetrievedChunk> search(Long devId, String question, boolean publicOnly) {
+    public List<RetrievedChunk> retrievePublic(Long devId, String question, RetrievalMode mode) {
+        return search(devId, question, true, mode);
+    }
+
+    private List<RetrievedChunk> search(Long devId, String question, boolean publicOnly, RetrievalMode mode) {
         if (question == null || question.isBlank()) {
             throw new IllegalArgumentException("Question cannot be blank");
         }
 
         float[] vector = model.embed(TextSegment.from(question.trim())).content().vector();
 
-        return repository.searchSimilar(devId, vector, TOP_K, publicOnly);
+        return repository.searchSimilar(devId, vector, TOP_K, publicOnly, mode);
     }
 }
