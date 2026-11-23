@@ -8,7 +8,11 @@ public class PortfolioPageTestProfile implements QuarkusTestProfile {
     @Override
     public Map<String, String> getConfigOverrides() {
         // HTTP/template checks need neither a database nor background ingestion.
+        // Non-empty synthetic values allow CDI startup without developer credentials.
         return Map.of(
+                "gemini.api-key", "test-only-gemini-key",
+                "github.token", "test-only-github-token",
+                "quarkus.langchain4j.openai.api-key", "test-only-groq-key",
                 "quarkus.datasource.jdbc.initial-size", "0",
                 "quarkus.datasource.jdbc.min-size", "0",
                 "quarkus.datasource.devservices.enabled", "false",
