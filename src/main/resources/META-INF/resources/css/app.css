@@ -293,3 +293,21 @@ progress { width: 100%; height: .65rem; accent-color: var(--primary); }
 .application footer .app-technologies > .technology { display: inline-flex; align-items: center; gap: .35rem; }
 
 :root[data-theme='dark'] .technology-logo[data-monochrome='true'] { filter: invert(1); }
+
+/* Space for complete borders and focus outlines inside the analysis scrollers. */
+#advisor .scroll-panel { padding: .5rem; scroll-padding: .5rem; }
+#advisor input, #advisor textarea {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  background-clip: padding-box;
+}
+#advisor input:hover, #advisor textarea:hover { border-color: var(--accent); }
+#advisor input:focus-visible, #advisor textarea:focus-visible {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
