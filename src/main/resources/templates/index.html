@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Explore engineering portfolios with semantic evidence and grounded analysis.">
   <title>Portfolio RAG Advisor</title>
-  <link rel="stylesheet" href="/css/app.css?v=workspace-2">
-  <script src="/js/i18n.js?v=workspace-2" defer></script>
-  <script src="/js/app.js?v=workspace-2" defer></script>
+  <link rel="stylesheet" href="/css/app.css?v=profile-3">
+  <script src="/js/i18n.js?v=profile-3" defer></script>
+  <script src="/js/app.js?v=profile-3" defer></script>
 </head>
 <body class="application">
   <a class="skip" href="#main" data-i18n>Skip to content</a>
@@ -35,22 +35,21 @@
   <main id="main" class="wrap workspace">
     <section id="profile" class="tab-panel" role="tabpanel" aria-labelledby="tab-profile" tabindex="0">
       <div class="section-heading"><h2 id="profile-title" data-i18n>Developer Profile</h2><span class="badge" data-i18n>Declared skills</span></div>
-      <div class="card">
+      <div class="profile-content">
         <p id="profile-status" role="status" aria-live="polite" data-i18n>Enter a developer ID to load their profile.</p>
         <div id="profile-result" aria-busy="false"></div>
       </div>
-      <p class="note" data-i18n>The base stack is declared by the developer. These skills are not verified GitHub evidence. The application technologies describe this tool, not the developer.</p>
     </section>
     <section id="retrieval" class="tab-panel" role="tabpanel" aria-labelledby="tab-retrieval" tabindex="0" hidden>
-      <div class="section-heading"><div><p class="eyebrow" data-i18n>Inspect the evidence</p><h2 id="retrieval-title" data-i18n>Retrieval Explorer</h2></div><span class="badge" data-i18n>Public sources only</span></div>
+      <div class="section-heading"><div><h2 id="retrieval-title" data-i18n>Retrieval Explorer</h2></div><span class="badge" data-i18n>Public sources only</span></div>
       {#include partials/retrieval /}
     </section>
     <section id="advisor" class="tab-panel" role="tabpanel" aria-labelledby="tab-advisor" tabindex="0" hidden>
-      <div class="section-heading"><div><p class="eyebrow" data-i18n>From evidence to direction</p><h2 id="advisor-title" data-i18n>Portfolio Advisor</h2></div><span class="badge" data-i18n>Local demo only</span></div>
+      <div class="section-heading"><div><h2 id="advisor-title" data-i18n>Portfolio Advisor</h2></div><span class="badge" data-i18n>Local demo only</span></div>
       {#include partials/advisor /}
     </section>
   </main>
-  <footer class="wrap"><span data-i18n>Built with Quarkus</span>        <div class="tags app-technologies" aria-label="Application technologies"><span>JAVA 21</span><span>QUARKUS</span><span>LANGCHAIN4J</span><span>GEMINI</span><span>GROQ</span><span>PGVECTOR</span></div><span data-i18n>Evidence before assumptions.</span></footer>
+  <footer class="wrap"><span data-i18n>Built with Quarkus</span>        <div class="tags app-technologies" aria-label="Application technologies"><span>JAVA 21</span><span>QUARKUS</span><span>LANGCHAIN4J</span><span>GEMINI</span><span>GROQ</span><span>PGVECTOR</span></div></footer>
   <noscript><p class="wrap notice">Ative o JavaScript para navegar pelas abas e consultar os dados. / Enable JavaScript to use tabs and load data.</p></noscript>
 </body>
 </html>

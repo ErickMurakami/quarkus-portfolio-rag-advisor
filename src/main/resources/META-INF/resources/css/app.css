@@ -230,9 +230,34 @@ footer { display: flex; justify-content: space-between; gap: 1rem; border-top: 1
   .application footer .app-technologies { order: 3; width: 100%; }
 }
 
-#profile-result { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem 1.5rem; }
-#profile-result > h3, #profile-result > p { grid-column: 1 / -1; margin: .2rem 0; }
-.skill-group { min-width: 0; }
-.skill-group h4 { margin: .75rem 0 .5rem; }
-@media (max-width: 1000px) { #profile-result { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 700px) { #profile-result { grid-template-columns: 1fr; } }
+/* Content-sized profile inventory; rows grow with their actual technology count. */
+.application #profile { overflow: auto; scrollbar-gutter: stable; }
+.profile-content { flex: 0 0 auto; padding-block: .25rem 1rem; }
+.profile-content > [role='status'] { margin: 0 0 1rem; color: var(--muted); font-size: .9375rem; }
+#profile-result { display: block; max-width: 1150px; }
+.profile-identity { margin-bottom: 1.5rem; }
+.profile-identity h3 { font-size: 1.4rem; margin-bottom: .2rem; }
+.profile-identity p { margin: 0; }
+.profile-identity a { color: var(--muted); }
+.stack-heading { padding-bottom: .65rem; margin: 0; border-bottom: 1px solid var(--border); }
+.skill-group { display: grid; grid-template-columns: 10rem minmax(0, 1fr); align-items: baseline; gap: 1.25rem; padding-block: .9rem; border-bottom: 1px solid var(--border); }
+.skill-group h4 { margin: 0; color: var(--muted); }
+.skill-group .tags { gap: .5rem 1.25rem; }
+.skill-group .tags span { border: 0; background: transparent; padding: 0; color: var(--text); font: 1rem/1.6 var(--body); }
+.application .controls .card { border: 0; background: transparent; padding: 0 .5rem 0 0; }
+.analysis-section { padding-block: 1rem; border-bottom: 1px solid var(--border); }
+.analysis-section:first-child { padding-top: 0; }
+.analysis-section p { margin-block: .5rem; }
+.recommendations { margin-block: .75rem; }
+.result-entry { border-bottom: 1px solid var(--border); padding-block: 1rem; }
+.result-entry h3 { font-size: 1rem; }
+.result-entry p { margin-block: .5rem; }
+.priority { font: .8125rem/1.6 var(--mono); }
+.output .notice { background: transparent; padding: .5rem .75rem; }
+.evidence-panel .result-entry { margin: 0; }
+.evidence-panel details { border: 0; padding-top: 0; margin-top: .75rem; }
+.evidence-panel .prose { max-height: none; overflow: visible; }
+@media (max-width: 700px) {
+  .application #profile { overflow: visible; }
+  .skill-group { grid-template-columns: 1fr; gap: .5rem; }
+}

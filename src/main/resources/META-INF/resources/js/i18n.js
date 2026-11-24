@@ -10,6 +10,7 @@ const portuguese = {
   'One developer, shared across all tabs.': 'Um desenvolvedor, compartilhado entre todas as abas.',
   'Engineering, backed by evidence': 'Engenharia, fundamentada em evidências',
   'Explore your engineering portfolio through semantic search and AI-powered analysis.': 'Explore seu portfólio de engenharia com busca semântica e análise por inteligência artificial.',
+  'Technical stack': 'Stack técnica',
   'Developer Profile': 'Perfil do desenvolvedor', 'Declared skills': 'Competências declaradas',
   'Enter a developer ID to load their profile.': 'Informe o ID de um desenvolvedor para carregar seu perfil.',
   'The base stack is declared by the developer. These skills are not verified GitHub evidence. The application technologies describe this tool, not the developer.': 'A stack base é declarada pelo desenvolvedor. Essas competências não são evidências verificadas no GitHub. As tecnologias da aplicação descrevem esta ferramenta, não o desenvolvedor.',

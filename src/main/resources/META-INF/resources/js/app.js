@@ -119,8 +119,14 @@ async function loadProfile() {
     byId('selected-developer').textContent = `${profile.fullName || ''}${profile.githubUsername ? ' · @' + profile.githubUsername : ''}`;
     delete byId('selected-developer').dataset.i18n;
     const result = byId('profile-result');
-    result.append(element('h3', profile.fullName || 'Unnamed developer'));
-    result.append(element('p', profile.githubUsername ? `@${profile.githubUsername}` : 'No GitHub username declared.', 'muted'));
+    const identity = element('div', null, 'profile-identity');
+    identity.append(profile.fullName ? element('h3', profile.fullName) : uiElement('h3', 'Unnamed developer'));
+    const username = element('p', null, 'muted');
+    username.append(profile.githubUsername
+      ? sourceLink(`@${profile.githubUsername}`, `https://github.com/${encodeURIComponent(profile.githubUsername)}`)
+      : uiElement('span', 'No GitHub username declared.'));
+    identity.append(username);
+    result.append(identity, uiElement('h3', 'Technical stack', 'stack-heading'));
     const skills = list(profile.skills).filter(Boolean);
     for (const [category, label] of Object.entries(skillCategories)) {
       const names = skills.filter(skill => skill.category === category).map(skill => skill.name);
@@ -170,29 +176,29 @@ function renderAdvisor(data) {
     status('advisor-status', 'No analysis was returned. Try a different question.');
     return;
   }
-  const answer = element('article', null, 'card');
+  const answer = element('article', null, 'analysis-section');
   answer.append(uiElement('h3', 'Analysis'), element('p', data.answer, 'prose'));
   result.append(answer);
-  const strengths = element('article', null, 'card');
+  const strengths = element('article', null, 'analysis-section');
   strengths.append(uiElement('h3', 'Demonstrated strengths'));
   const items = element('ul');
   list(data.strengths).forEach(value => items.append(element('li', value)));
   strengths.append(items.children.length ? items : uiElement('p', 'No strengths were returned.', 'muted'));
   result.append(strengths);
-  const tips = element('div', null, 'result-grid');
+  const tips = element('div', null, 'recommendations');
   list(data.tips).filter(Boolean).forEach(tip => {
-    const card = element('article', null, 'card');
+    const card = element('article', null, 'result-entry');
     const heading = element('div', null, 'result-title');
     heading.append(element('h3', tip.title || 'Recommendation'));
     if (['HIGH', 'MEDIUM', 'LOW'].includes(tip.priority)) {
-      heading.append(uiElement('span', tip.priority, `badge priority-${tip.priority.toLowerCase()}`));
+      heading.append(uiElement('span', tip.priority, `priority priority-${tip.priority.toLowerCase()}`));
     }
     card.append(heading, element('p', tip.description, 'prose'));
     if (list(tip.relatedRepos).length) card.append(tags(tip.relatedRepos));
     tips.append(card);
   });
   result.append(tips.children.length ? tips : uiElement('p', 'No recommendations were returned.', 'note'));
-  const sources = element('article', null, 'card');
+  const sources = element('article', null, 'analysis-section');
   sources.append(uiElement('h3', 'Sources'));
   list(data.sources).filter(Boolean).forEach(source => {
     const row = element('div', null, 'source-row');
@@ -282,7 +288,7 @@ function renderEvidence(panel, chunks, mode) {
   const repositories = new Set(chunks.map(chunk => chunk.sourceReference));
   panel.append(uiElement('p', `${chunks.length} chunks · ${repositories.size} distinct repositories`, 'note'));
   chunks.forEach(chunk => {
-    const card = element('article', null, 'card');
+    const card = element('article', null, 'result-entry');
     const heading = element('h3');
     heading.append(sourceLink(chunk.repo, chunk.sourceReference));
     card.append(heading, uiElement('span', similarity(chunk.similarity), 'similarity'));

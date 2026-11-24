@@ -311,3 +311,18 @@ test('Portuguese is the default; changing language preserves unmodified API cont
   assert.match(env.get('advisor-status').textContent, /Análise concluída/);
   assert.equal(env.state().language, 'pt');
 });
+
+test('profile keeps uneven skill categories and original skill names without adding technologies', async () => {
+  const skills = [{ name: 'Java', category: 'LANGUAGE' }, { name: 'Kotlin', category: 'LANGUAGE' },
+    { name: 'Python', category: 'LANGUAGE' }, { name: 'Quarkus', category: 'FRAMEWORK' },
+    { name: 'Custom internal tool', category: 'OTHER' }];
+  const env = environment({ fetch: async () => response({ id: 7, fullName: 'Synthetic Developer', githubUsername: 'synthetic', skills }) });
+  selectDeveloper(env); await env.get('profile-refresh').emit('click'); await new Promise(setImmediate);
+  const groups = allNodes(env.get('profile-result')).filter(node => node.className === 'skill-group');
+  assert.equal(groups.length, 3);
+  assert.match(groups[0].textContent, /Languages.*Java.*Kotlin.*Python/);
+  assert.match(groups[1].textContent, /Frameworks.*Quarkus/);
+  assert.match(groups[2].textContent, /Other.*Custom internal tool/);
+  assert.doesNotMatch(env.get('profile-result').textContent, /PostgreSQL/);
+  assert.deepEqual(env.state().profile.skills, skills);
+});
