@@ -1,0 +1,28 @@
+Local technology marks, retrieved 2026-11-24. Logos identify their respective
+technologies; no affiliation, endorsement or ownership is implied.
+
+Devicon (MIT; LICENSE-devicon):
+https://github.com/devicons/devicon/tree/master/icons
+java, kotlin, python, spring, quarkus, fastapi, postgresql, mysql, redis,
+supabase, docker, podman, git, githubactions, jenkins, junit, jira.
+Files retain the original colored SVG designs.
+
+Simple Icons (CC0; LICENSE-simple-icons; individual trademark rights remain):
+https://github.com/simple-icons/simple-icons/tree/develop/icons
+langchain.svg, googlegemini.svg. Unmodified SVGs.
+
+LangChain4j project logo:
+https://docs.langchain4j.dev/img/favicon.ico
+Project: https://github.com/langchain4j/langchain4j (Apache-2.0;
+LICENSE-langchain4j). Unmodified 15 KB favicon used in preference to the
+large official SVG.
+
+Spring AI project mark:
+https://spring.io/img/projects/spring-ai.svg
+Used unmodified to identify Spring AI. Spring trademarks belong to their
+respective owners. See https://spring.io/trademarks for brand guidelines.
+
+No logo files are loaded for unknown technologies. Unsupported examples such
+as Mockito, InterSystems IRIS and Groq intentionally keep their text labels.
+The mapping in js/technology-logos.js is the sole runtime allowlist; only marks
+actually displayed in a profile or the application stack are requested.

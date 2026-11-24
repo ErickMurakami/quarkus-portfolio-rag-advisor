@@ -75,6 +75,34 @@ function tags(values) {
   return container;
 }
 
+function technologyTag(name) {
+  const tag = element('span', null, 'technology');
+  const path = technologyLogo(name);
+  if (path) {
+    const logo = element('img', null, 'technology-logo');
+    logo.src = path;
+    logo.alt = '';
+    logo.width = 20;
+    logo.height = 20;
+    logo.loading = 'lazy';
+    logo.decoding = 'async';
+    logo.setAttribute('aria-hidden', 'true');
+    logo.addEventListener('error', () => { logo.hidden = true; });
+    tag.append(logo);
+  }
+  tag.append(element('span', name));
+  return tag;
+}
+function technologyTags(names) {
+  const container = element('div', null, 'technologies');
+  names.forEach(name => container.append(technologyTag(name)));
+  return container;
+}
+document.querySelectorAll('.app-technologies > span').forEach(tag => {
+  const item = technologyTag(tag.textContent);
+  tag.replaceWith(item);
+});
+
 const themeToggle = byId('theme-toggle');
 function setTheme(theme) {
   document.documentElement.dataset.theme = theme;
@@ -132,7 +160,7 @@ async function loadProfile() {
       const names = skills.filter(skill => skill.category === category).map(skill => skill.name);
       if (names.length) {
         const group = element('section', null, 'skill-group');
-        group.append(uiElement('h4', label), tags(names));
+        group.append(uiElement('h4', label), technologyTags(names));
         result.append(group);
       }
     }

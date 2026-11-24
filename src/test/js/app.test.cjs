@@ -74,9 +74,11 @@ function environment({ local = true, language = 'en', url = 'http://localhost/',
     fetch: (...args) => { calls.push(args); return fetch(...args); }
   });
   vm.runInContext(readFileSync(path.join(root, 'META-INF/resources/js/i18n.js'), 'utf8'), context);
+  vm.runInContext(readFileSync(path.join(root, 'META-INF/resources/js/technology-logos.js'), 'utf8'), context);
   vm.runInContext(script, context);
   return {
     nodes, calls, document, window,
+    logo: name => vm.runInContext(`technologyLogo(${JSON.stringify(name)})`, context),
     state: () => JSON.parse(vm.runInContext('JSON.stringify(appState)', context)),
     get: id => nodes.get(id),
     runDebounce: async () => {
@@ -325,4 +327,24 @@ test('profile keeps uneven skill categories and original skill names without add
   assert.match(groups[2].textContent, /Other.*Custom internal tool/);
   assert.doesNotMatch(env.get('profile-result').textContent, /PostgreSQL/);
   assert.deepEqual(env.state().profile.skills, skills);
+});
+
+test('technology logos tolerate aliases and versions while unknown names stay text only', async () => {
+  const env = environment({ fetch: async () => response({ id: 7, fullName: 'Synthetic', skills: [
+    { name: '  JAVA 21 ', category: 'LANGUAGE' }, { name: 'spring-boot', category: 'FRAMEWORK' },
+    { name: 'Private custom tool <img>', category: 'TOOL' }] }) });
+  assert.equal(env.logo('PostgreSQL'), '/logos/postgresql.svg');
+  assert.equal(env.logo('postgres'), '/logos/postgresql.svg');
+  assert.equal(env.logo('JUnit 5'), '/logos/junit.svg');
+  assert.equal(env.logo('Spring AI'), '/logos/springai.svg');
+  assert.equal(env.logo('../logos/evil'), null);
+  assert.equal(env.logo('Mockito'), null);
+  selectDeveloper(env); await env.get('profile-refresh').emit('click'); await new Promise(setImmediate);
+  const images = allNodes(env.get('profile-result')).filter(node => node.tagName === 'img');
+  assert.equal(images.length, 2);
+  assert.equal(images[0].alt, '');
+  assert.equal(images[0].attributes['aria-hidden'], 'true');
+  await images[0].emit('error'); assert.equal(images[0].hidden, true);
+  assert.match(env.get('profile-result').textContent, /  JAVA 21 /);
+  assert.match(env.get('profile-result').textContent, /Private custom tool <img>/);
 });
