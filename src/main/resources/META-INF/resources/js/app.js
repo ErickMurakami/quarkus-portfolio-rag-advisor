@@ -165,7 +165,7 @@ async function loadProfile() {
       const names = skills.filter(skill => skill.category === category).map(skill => skill.name);
       if (names.length) {
         const group = element('section', null, 'skill-group workspace-card profile-skill-card'
-          + (category === 'TOOL' && names.length >= 4 ? ' skill-group--wide' : ''));
+          + (category === 'TOOL' ? ' skill-group--wide' : ''));
         group.append(uiElement('h4', label), technologyTags(names));
         skillCards.append(group);
       }

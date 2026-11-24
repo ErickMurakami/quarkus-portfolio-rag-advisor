@@ -523,7 +523,7 @@ test('analysis has distinct empty and error cards and hides the loading indicato
   }
 });
 
-test('editorial profile retains category cards and gives a larger tools inventory its own row', async () => {
+test('compact profile retains category cards and lets tools span the available width', async () => {
   const skills = [{ name: 'Java', category: 'LANGUAGE' }, ...['Git', 'Docker', 'Jenkins', 'Custom tool'].map(name => ({ name, category: 'TOOL' }))];
   const env = environment({ fetch: async () => response({ id: 7, fullName: 'Synthetic', skills }) });
   selectDeveloper(env); await env.get('profile-refresh').emit('click'); await new Promise(setImmediate);

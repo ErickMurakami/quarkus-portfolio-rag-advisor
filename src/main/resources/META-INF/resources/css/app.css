@@ -389,22 +389,28 @@ progress { width: 100%; height: .65rem; accent-color: var(--primary); }
 .card-stack > .workspace-card, #setup-profile-fields > .workspace-card { margin: 0; }
 
 /* Editorial profile cards: restrained surfaces, two columns and structured rows. */
-#profile .skill-cards { columns: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; align-items: start; padding-block: .35rem; }
+#profile .skill-cards { width: 100%; min-width: 0; columns: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; align-items: stretch; padding-block: .35rem; }
 #profile .profile-skill-card {
   display: block;
-  width: auto;
+  width: 100%;
+  min-width: 0;
   margin: 0;
-  padding: .85rem 1rem;
+  padding: 1rem 1.15rem;
   border: 1px solid color-mix(in srgb, var(--border) 38%, transparent);
   border-radius: .6rem;
   background: color-mix(in srgb, var(--surface) 45%, var(--background));
   box-shadow: none;
 }
-#profile .profile-skill-card h4 { margin: 0 0 .65rem; color: var(--muted); font: 600 .875rem/1.5 var(--heading); letter-spacing: .08em; text-transform: uppercase; }
-#profile .profile-skill-card .technologies { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .45rem .8rem; align-items: start; }
+#profile .profile-skill-card h4 { margin: 0 0 .8rem; color: var(--muted); font: 600 .875rem/1.5 var(--heading); letter-spacing: .08em; text-transform: uppercase; }
+#profile .profile-skill-card .technologies { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .6rem 1rem; align-items: start; }
 #profile .profile-skill-card .technology { min-width: 0; gap: .4rem; font-size: .9375rem; line-height: 1.55; align-items: center; }
 #profile .profile-skill-card .technology > span { overflow-wrap: anywhere; }
 #profile .profile-skill-card .technology-logo { width: 16px; height: 16px; }
 #profile .skill-group--wide { grid-column: 1 / -1; }
-#profile .skill-group--wide .technologies { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
+#profile .skill-group--wide .technologies { display: flex; flex-wrap: wrap; gap: .85rem 2rem; }
+#profile .skill-group--wide .technology { gap: .5rem; font-size: 1rem; line-height: 1.6; }
 @media (max-width: 700px) { #profile .skill-cards { grid-template-columns: 1fr; } #profile .skill-group--wide { grid-column: auto; } }
+
+/* Full horizontal use without stretching the content-sized cards vertically. */
+.application #profile { scrollbar-gutter: auto; }
+#profile .profile-content, #profile #profile-result { width: 100%; min-width: 0; max-width: none; }
