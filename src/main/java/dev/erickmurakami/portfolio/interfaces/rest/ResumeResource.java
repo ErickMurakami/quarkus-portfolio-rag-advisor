@@ -31,20 +31,26 @@ public class ResumeResource {
     @Blocking
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.APPLICATION_JSON)
-    public DeveloperProfileRequest importResume(@RestForm("file") FileUpload file, @RestForm("githubUsername") String githubUserName) throws IOException{
-        if(file == null)
-            throw new BadRequestException("File cannot be null");
-
-        try(InputStream input = Files.newInputStream(file.uploadedFile())){
-            byte[] signature = input.readNBytes(5);
-            if(!Arrays.equals(signature, "%PDF-".getBytes(StandardCharsets.US_ASCII))){
-                throw new BadRequestException("Invalid PDF file");
+    public DeveloperProfileRequest importResume(@RestForm("file") FileUpload file,
+            @RestForm("githubUsername") String githubUserName) throws IOException {
+        if (file == null) throw new BadRequestException("File is required");
+        try {
+            if (githubUserName == null || githubUserName.isBlank())
+                throw new BadRequestException("GitHub username is required");
+            if (file.size() <= 0 || file.size() > 4 * 1024 * 1024)
+                throw new BadRequestException("PDF must be between 1 byte and 4 MiB");
+            try (InputStream input = Files.newInputStream(file.uploadedFile())) {
+                if (!Arrays.equals(input.readNBytes(5), "%PDF-".getBytes(StandardCharsets.US_ASCII)))
+                    throw new BadRequestException("Invalid PDF file");
             }
-        }
-        try{
-            return service.importResume(file.uploadedFile(), githubUserName);
-        } catch (IllegalArgumentException e){
-            throw new BadRequestException(e.getMessage(), e);
+            try {
+                return service.importResume(file.uploadedFile(), githubUserName);
+            } catch (RuntimeException ex) {
+                // Do not expose model responses or resume text in an error body.
+                throw new BadRequestException("Resume extraction failed; check the PDF and provider configuration");
+            }
+        } finally {
+            Files.deleteIfExists(file.uploadedFile());
         }
     }
 }

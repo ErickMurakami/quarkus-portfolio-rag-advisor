@@ -13,6 +13,9 @@ public class PdfTextExtractor {
 
     public String extract(Path path) throws IOException{
         try (var document = Loader.loadPDF(path.toFile())){
+            if (document.getNumberOfPages() > 100) {
+                throw new IllegalArgumentException("PDF exceeds 100 pages");
+            }
             return new PDFTextStripper().getText(document);
         }
     }

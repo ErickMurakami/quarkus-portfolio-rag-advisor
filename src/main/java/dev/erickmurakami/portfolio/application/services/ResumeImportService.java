@@ -30,6 +30,9 @@ public class ResumeImportService {
         if (text == null || text.isBlank()) {
             throw new RuntimeException("PDF has no text content");
         }
+        if (text.length() > 100_000) {
+            throw new IllegalArgumentException("Resume text exceeds supported size");
+        }
         String json = resumeAiExtractor.extractDeveloperProfileFromResume(text);
 
         ExtractedResume resume;

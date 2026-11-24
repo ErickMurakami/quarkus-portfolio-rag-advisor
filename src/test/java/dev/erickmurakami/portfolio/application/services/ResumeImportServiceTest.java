@@ -59,4 +59,20 @@ public class ResumeImportServiceTest {
         assertEquals(1, result.skills().size());
         assertEquals("Java", result.skills().getFirst().name());
     }
+    @Test
+    void shouldRejectEmptyResumeTextBeforeCallingAi() throws IOException {
+        Path pdf = Path.of("synthetic-empty.pdf");
+        when(textExtractor.extract(pdf)).thenReturn("   ");
+        org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () -> service.importResume(pdf, "synthetic"));
+        org.mockito.Mockito.verifyNoInteractions(aiExtractor);
+    }
+
+    @Test
+    void shouldRejectExcessiveResumeTextBeforeCallingAi() throws IOException {
+        Path pdf = Path.of("synthetic-large.pdf");
+        when(textExtractor.extract(pdf)).thenReturn("a".repeat(100_001));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> service.importResume(pdf, "synthetic"));
+        org.mockito.Mockito.verifyNoInteractions(aiExtractor);
+    }
+
 }

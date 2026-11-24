@@ -30,6 +30,15 @@ public class IngestionJobResource {
                 .build();
     }
 
+    @POST
+    @Path("/developers/{devId}/public")
+    public Response createPublic(@PathParam("devId") Long devId) {
+        IngestionJobResponse response = service.create(devId, false);
+        return Response.accepted(response)
+                .location(URI.create("/api/v1/ingestion-jobs/" + response.jobId()))
+                .build();
+    }
+
     @GET
     @Path("/{jobId}")
     public IngestionJobResponse findById(@PathParam("jobId") UUID jobId) {

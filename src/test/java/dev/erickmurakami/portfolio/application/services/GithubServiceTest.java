@@ -316,6 +316,15 @@ public class GithubServiceTest {
                                 nullable(String.class));
         }
 
+        @Test
+        void shouldDiscoverPublicJobRepositoriesWithoutServerToken() {
+                when(client.findRepositories(OWNER, 100, 1, "application/vnd.github+json"))
+                        .thenReturn(List.of(repository("PublicTest", false), repository("PrivateTest", true)));
+                assertEquals(List.of("PublicTest"), service.findRepoNames(OWNER, false));
+                verify(client).findRepositories(OWNER, 100, 1, "application/vnd.github+json");
+                org.mockito.Mockito.verifyNoMoreInteractions(client);
+        }
+
         private GithubRepository repository(
                         String name,
                         boolean isPrivate) {
