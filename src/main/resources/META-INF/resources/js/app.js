@@ -2,12 +2,12 @@
 
 const appState = {
   developerId: '', profile: null, advisor: null, retrieval: {}, activeTab: 'profile',
-  forms: { advisorQuestion: '', retrievalQuestion: '', mode: 'FOCUSED' }, language: 'pt'
+  forms: { advisorQuestion: '', retrievalQuestion: '', mode: 'FOCUSED' }, language: initialUiLanguage
 };
-try { if (localStorage.getItem('portfolio-language') === 'en') appState.language = 'en'; } catch { /* Optional storage. */ }
 function setText(node, key) {
   node.dataset.i18n = key;
-  node.textContent = translated(key, appState.language);
+  const value = translated(key, appState.language);
+  if (node.textContent !== value) node.textContent = value;
 }
 const byId = id => document.getElementById(id);
 const list = value => Array.isArray(value) ? value : [];
@@ -408,24 +408,7 @@ for (const [index, name] of tabNames.entries()) {
   });
 }
 function applyLanguage() {
-  document.documentElement.lang = appState.language === 'pt' ? 'pt-BR' : 'en';
-  document.querySelectorAll('[data-i18n]').forEach(node => {
-    const key = node.dataset.i18n || node.textContent.trim();
-    setText(node, key);
-  });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(node => {
-    node.dataset.i18nPlaceholder ||= node.placeholder;
-    node.placeholder = translated(node.dataset.i18nPlaceholder, appState.language);
-  });
-  document.querySelectorAll('[aria-label]').forEach(node => {
-    node.dataset.originalLabel ||= node.getAttribute('aria-label');
-    node.setAttribute('aria-label', translated(node.dataset.originalLabel, appState.language));
-  });
-  byId('language-flag').src = appState.language === 'pt' ? '/flags/brazil.svg' : '/flags/united-kingdom.svg';
-  const languageLabel = appState.language === 'pt' ? 'Idioma: português. Mudar para inglês' : 'Language: English. Switch to Portuguese';
-  byId('language-toggle').setAttribute('aria-label', languageLabel);
-  byId('language-toggle').title = appState.language === 'pt' ? 'Mudar para inglês' : 'Switch to Portuguese';
-  setTheme(document.documentElement.dataset.theme);
+  translateUi(appState.language);
 }
 byId('language-toggle').addEventListener('click', () => {
   appState.language = appState.language === 'pt' ? 'en' : 'pt';

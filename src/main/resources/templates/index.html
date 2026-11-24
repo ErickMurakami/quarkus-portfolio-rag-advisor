@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Explore engineering portfolios with semantic evidence and grounded analysis.">
   <title>Portfolio RAG Advisor</title>
-  <link rel="stylesheet" href="/css/app.css?v=logos-1">
-  <script src="/js/i18n.js?v=logos-1" defer></script>
+  <script src="/js/i18n.js?v=locale-4"></script>
+  <link rel="stylesheet" href="/css/app.css?v=locale-4">
   <script src="/js/technology-logos.js?v=logos-1" defer></script>
-  <script src="/js/app.js?v=logos-1" defer></script>
+  <script src="/js/app.js?v=locale-4" defer></script>
 </head>
 <body class="application">
   <a class="skip" href="#main" data-i18n>Skip to content</a>
@@ -23,7 +23,7 @@
     </div>
       <div class="header-actions">
         <button id="language-toggle" class="secondary language-toggle" type="button" aria-label="Idioma: português. Mudar para inglês" title="Mudar para inglês"><img id="language-flag" src="/flags/brazil.svg" alt="" width="24" height="18" aria-hidden="true" draggable="false"></button>
-        <button id="theme-toggle" class="secondary" type="button" aria-label="Switch to light theme">Light theme</button>
+        <button id="theme-toggle" class="secondary" type="button" aria-label="Switch to light theme" data-i18n>Light theme</button>
       </div>
       <nav aria-label="Workspace tabs" role="tablist">
         <button id="tab-profile" type="button" role="tab" aria-selected="true" aria-controls="profile" tabindex="0" data-i18n>Profile</button>
@@ -52,5 +52,6 @@
   </main>
   <footer class="wrap"><span data-i18n>Built with Quarkus</span>        <div class="tags app-technologies" aria-label="Application technologies"><span>JAVA 21</span><span>QUARKUS</span><span>LANGCHAIN4J</span><span>GEMINI</span><span>GROQ</span><span>PGVECTOR</span></div></footer>
   <noscript><p class="wrap notice">Ative o JavaScript para navegar pelas abas e consultar os dados. / Enable JavaScript to use tabs and load data.</p></noscript>
+  <script>if (typeof translateUi === "function") translateUi(initialUiLanguage);</script>
 </body>
 </html>

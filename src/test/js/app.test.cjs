@@ -20,7 +20,7 @@ class Node {
   set innerHTML(_) { throw new Error('Untrusted HTML rendering is forbidden'); }
   append(...nodes) { this.children.push(...nodes); }
   replaceChildren(...nodes) { this._text = ''; this.children = nodes; }
-  setAttribute(name, value) { this.attributes[name] = value; }
+  setAttribute(name, value) { this.attributes[name] = value; if (name === 'src') this.src = value; }
   getAttribute(name) { return this.attributes[name] ?? null; }
   dispatchEvent(event) { void this.emit(event.type); }
   addEventListener(name, handler) { (this.listeners[name] ??= []).push(handler); }
@@ -347,4 +347,21 @@ test('technology logos tolerate aliases and versions while unknown names stay te
   await images[0].emit('error'); assert.equal(images[0].hidden, true);
   assert.match(env.get('profile-result').textContent, /  JAVA 21 /);
   assert.match(env.get('profile-result').textContent, /Private custom tool <img>/);
+});
+
+test('initial locale is selected before app startup and unchanged labels retain their text nodes', async () => {
+  const env = environment({ language: 'en' });
+  assert.equal(env.document.documentElement.lang, 'en');
+  assert.equal(env.document.documentElement.dataset.languagePending, undefined);
+  const status = env.get('profile-status');
+  status.dataset.i18n = 'Loading developer profile…';
+  status.textContent = 'Loading developer profile…';
+  const marker = new Node('span'); marker.textContent = ' retained child'; status.children.push(marker);
+  // A generated result without data-i18n must never become translated UI copy.
+  const result = new Node('p'); result.textContent = 'Analysis'; env.get('profile-result').append(result);
+  await env.get('language-toggle').emit('click');
+  assert.equal(env.document.documentElement.lang, 'pt-BR');
+  assert.equal(status.textContent, 'Carregando perfil do desenvolvedor…');
+  assert.equal(result.textContent, 'Analysis');
+  assert.equal(env.calls.length, 0);
 });

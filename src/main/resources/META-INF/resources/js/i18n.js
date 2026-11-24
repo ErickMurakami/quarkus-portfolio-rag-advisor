@@ -1,4 +1,18 @@
 'use strict';
+
+// This small script is parser-blocking in <head>. Preferences are selected before
+// CSS can paint; only untranslated labels are withheld until the body-end call.
+const initialUiLanguage = (() => {
+  try { return localStorage.getItem('portfolio-language') === 'en' ? 'en' : 'pt'; }
+  catch { return 'pt'; }
+})();
+document.documentElement.lang = initialUiLanguage === 'pt' ? 'pt-BR' : 'en';
+document.documentElement.dataset.languagePending = 'true';
+let initialUiTheme;
+try { initialUiTheme = localStorage.getItem('portfolio-theme'); } catch { /* Optional storage. */ }
+document.documentElement.dataset.theme = ['light', 'dark'].includes(initialUiTheme)
+  ? initialUiTheme : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+
 // UI copy only. Developer data, evidence and generated analyses are never translated.
 const portuguese = {
   'Skip to content': 'Ir para o conteúdo',
@@ -79,4 +93,45 @@ function translated(text, language) {
     .replace(/^(\d+) chunks · (\d+) distinct repositories$/, '$1 trechos · $2 repositórios distintos')
     .replace(/^Searching public evidence for developer (.+)…$/, 'Buscando evidências públicas para o desenvolvedor $1…')
     .replace(/^Search complete · developer (.+) · public sources only$/, 'Busca concluída · desenvolvedor $1 · somente fontes públicas');
+}
+
+
+function translateUi(language) {
+  // Synchronous, one browser task: no intermediate locale can be painted.
+  // Skip unchanged text to preserve DOM nodes, focus, selection and live regions.
+  document.documentElement.lang = language === 'pt' ? 'pt-BR' : 'en';
+  document.querySelectorAll('[data-i18n]').forEach(node => {
+    const key = node.dataset.i18n || node.textContent.trim();
+    node.dataset.i18n = key;
+    const value = translated(key, language);
+    if (node.textContent !== value) node.textContent = value;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(node => {
+    node.dataset.i18nPlaceholder ||= node.placeholder;
+    const value = translated(node.dataset.i18nPlaceholder, language);
+    if (node.placeholder !== value) node.placeholder = value;
+  });
+  document.querySelectorAll('[aria-label]').forEach(node => {
+    node.dataset.originalLabel ||= node.getAttribute('aria-label');
+    const value = translated(node.dataset.originalLabel, language);
+    if (node.getAttribute('aria-label') !== value) node.setAttribute('aria-label', value);
+  });
+  const flag = document.getElementById('language-flag');
+  const path = language === 'pt' ? '/flags/brazil.svg' : '/flags/united-kingdom.svg';
+  if (flag && flag.getAttribute('src') !== path) flag.setAttribute('src', path);
+  const toggle = document.getElementById('language-toggle');
+  if (toggle) {
+    toggle.setAttribute('aria-label', language === 'pt' ? 'Idioma: português. Mudar para inglês' : 'Language: English. Switch to Portuguese');
+    toggle.title = language === 'pt' ? 'Mudar para inglês' : 'Switch to Portuguese';
+  }
+  const themeToggle = document.getElementById('theme-toggle');
+  if (themeToggle) {
+    const dark = document.documentElement.dataset.theme === 'dark';
+    const key = dark ? 'Light theme' : 'Dark theme';
+    themeToggle.dataset.i18n = key;
+    const value = translated(key, language);
+    if (themeToggle.textContent !== value) themeToggle.textContent = value;
+    themeToggle.setAttribute('aria-label', translated(dark ? 'Switch to light theme' : 'Switch to dark theme', language));
+  }
+  delete document.documentElement.dataset.languagePending;
 }
