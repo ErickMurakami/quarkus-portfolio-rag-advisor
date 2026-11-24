@@ -330,8 +330,9 @@ test('profile keeps uneven skill categories and original skill names without add
     { name: 'Custom internal tool', category: 'OTHER' }];
   const env = environment({ fetch: async () => response({ id: 7, fullName: 'Synthetic Developer', githubUsername: 'synthetic', skills }) });
   selectDeveloper(env); await env.get('profile-refresh').emit('click'); await new Promise(setImmediate);
-  const groups = allNodes(env.get('profile-result')).filter(node => node.className === 'skill-group');
+  const groups = allNodes(env.get('profile-result')).filter(node => node.className?.split(' ').includes('skill-group'));
   assert.equal(groups.length, 3);
+  assert.ok(groups.every(node => node.className.split(' ').includes('workspace-card')));
   assert.match(groups[0].textContent, /Languages.*Java.*Kotlin.*Python/);
   assert.match(groups[1].textContent, /Frameworks.*Quarkus/);
   assert.match(groups[2].textContent, /Other.*Custom internal tool/);
@@ -520,4 +521,16 @@ test('analysis has distinct empty and error cards and hides the loading indicato
     assert.equal(env.get('advisor-result').children.length, 0);
     assert.equal(env.get('advisor-form').querySelector('[type="submit"]').disabled, false);
   }
+});
+
+test('editorial profile retains category cards and gives a larger tools inventory its own row', async () => {
+  const skills = [{ name: 'Java', category: 'LANGUAGE' }, ...['Git', 'Docker', 'Jenkins', 'Custom tool'].map(name => ({ name, category: 'TOOL' }))];
+  const env = environment({ fetch: async () => response({ id: 7, fullName: 'Synthetic', skills }) });
+  selectDeveloper(env); await env.get('profile-refresh').emit('click'); await new Promise(setImmediate);
+  const cards = allNodes(env.get('profile-result')).filter(node => node.className?.split(' ').includes('profile-skill-card'));
+  assert.equal(cards.length, 2);
+  assert.ok(!cards[0].className.includes('skill-group--wide'));
+  assert.ok(cards[1].className.includes('skill-group--wide'));
+  assert.equal(allNodes(cards[1]).filter(node => node.className === 'technology').length, 4);
+  assert.deepEqual(env.state().profile.skills, skills);
 });

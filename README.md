@@ -297,3 +297,15 @@ analysis content is synthetic and no AI provider is called.
 ![Status after changing the developer](docs/images/advisor-empty.png)
 
 <img src="docs/images/advisor-mobile.png" alt="Analysis cards on a small screen, with a complete textarea focus border" width="390">
+
+## Consistent workspace cards
+
+Retrieval and Setup use the same card surface, border, radius and spacing as the
+Advisor. Their forms, actions and status/progress are grouped without changing API
+contracts or request behavior. The declared stack remains grouped by the real
+skill categories, with local technology logos and text fallbacks. Browser QA checks
+card rendering, field focus boundaries, state retention and both themes.
+
+![Retrieval cards in dark theme](docs/images/retrieval-dark-pt.png)
+
+![Setup cards in dark theme](docs/images/setup-dark-pt.png)
