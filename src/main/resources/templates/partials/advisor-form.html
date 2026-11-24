@@ -1,0 +1,17 @@
+<form id="advisor-form" aria-describedby="advisor-help">
+  <section class="advisor-card advisor-question-card">
+    <label for="advisor-question" data-i18n>What would you like to improve?</label>
+    <textarea id="advisor-question" name="question" required aria-describedby="advisor-help" data-i18n-placeholder placeholder="How can I better demonstrate my backend engineering skills?"></textarea>
+    <p id="advisor-help" class="note" data-i18n>Uses the developer ID selected above. Your question and retrieved evidence are sent to the configured AI provider.</p>
+  </section>
+  <section class="advisor-card" aria-labelledby="advisor-suggestions-title">
+    <h3 id="advisor-suggestions-title" data-i18n>Quick questions</h3>
+    <div class="examples" aria-label="Example advisor questions">
+      <button type="button" class="example" data-question="Which backend engineering strengths are supported by my repositories?" data-i18n>Identify strengths</button>
+      <button type="button" class="example" data-question="How can I make my portfolio documentation more useful?" data-i18n>Improve documentation</button>
+    </div>
+  </section>
+  <div class="advisor-card advisor-submit">
+    <button type="submit" data-i18n>Analyze portfolio</button>
+  </div>
+</form>

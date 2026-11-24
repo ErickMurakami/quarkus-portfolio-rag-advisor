@@ -1,24 +1,23 @@
-<div class="workbench">
-<div class="scroll-panel controls" tabindex="0" aria-label="Advisor controls">
-<p class="notice" data-i18n>Local demonstration only. Analysis can use private repository content. Repository aliases do not prevent private information from appearing in generated text. Use only data you are authorized to send to the AI provider.</p>
-{#if localAdvisor}
-<form id="advisor-form" class="card" aria-describedby="advisor-help">
-  <label for="advisor-question" data-i18n>What would you like to improve?</label>
-  <textarea id="advisor-question" name="question" required data-i18n-placeholder placeholder="How can I better demonstrate my backend engineering skills?"></textarea>
-  <p id="advisor-help" class="note" data-i18n>Uses the developer ID selected above. Your question and retrieved evidence are sent to the configured AI provider.</p>
-  <div class="examples" aria-label="Example advisor questions">
-    <button type="button" class="example" data-question="Which backend engineering strengths are supported by my repositories?" data-i18n>Identify strengths</button>
-    <button type="button" class="example" data-question="How can I make my portfolio documentation more useful?" data-i18n>Improve documentation</button>
+<div class="workbench advisor-workbench">
+  <div class="scroll-panel controls" tabindex="0" aria-label="Advisor controls">
+    {#include partials/advisor-notice /}
+    {#if localAdvisor}
+      {#include partials/advisor-form /}
+    {/if}
   </div>
-  <button type="submit" data-i18n>Analyze portfolio</button>
-</form>
-</div>
-<div class="scroll-panel output" tabindex="0" aria-label="Advisor results">
-<p id="advisor-status" role="status" aria-live="polite" data-i18n>Select a developer and ask a question to begin.</p>
-<div id="advisor-result" aria-busy="false"></div>
-</div>
-{#else}
-<div class="card"><h3 data-i18n>Advisor is unavailable in this environment</h3><p data-i18n>The complete analysis is enabled only in the local Quarkus development profile. Retrieval Explorer below uses public sources.</p></div>
-</div>
-{/if}
+  <div class="scroll-panel output" tabindex="0" aria-label="Advisor results">
+    {#if localAdvisor}
+      <section id="advisor-state" class="advisor-card advisor-state" data-state="idle" aria-labelledby="advisor-state-title">
+        <h3 id="advisor-state-title" data-i18n>Ready to analyze</h3>
+        <p id="advisor-status" role="status" aria-live="polite" data-i18n>Select a developer and ask a question to begin.</p>
+        <progress id="advisor-progress" aria-label="Analysis progress" hidden></progress>
+      </section>
+      <div id="advisor-result" aria-busy="false"></div>
+    {#else}
+      <section class="advisor-card">
+        <h3 data-i18n>Advisor is unavailable in this environment</h3>
+        <p data-i18n>The complete analysis is enabled only in the local Quarkus development profile. Retrieval Explorer below uses public sources.</p>
+      </section>
+    {/if}
+  </div>
 </div>

@@ -295,7 +295,7 @@ progress { width: 100%; height: .65rem; accent-color: var(--primary); }
 :root[data-theme='dark'] .technology-logo[data-monochrome='true'] { filter: invert(1); }
 
 /* Space for complete borders and focus outlines inside the analysis scrollers. */
-#advisor .scroll-panel { padding: .5rem; scroll-padding: .5rem; }
+#advisor .scroll-panel { padding: .5rem; scroll-padding: .5rem; scrollbar-color: var(--border) var(--background); }
 #advisor input, #advisor textarea {
   box-sizing: border-box;
   display: block;
@@ -310,4 +310,46 @@ progress { width: 100%; height: .65rem; accent-color: var(--primary); }
   border-color: var(--accent);
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+
+/* Analysis uses content-sized cards. The shared application header is unchanged. */
+#advisor { --advisor-gap: .75rem; --advisor-padding: 1rem; }
+#advisor .advisor-workbench { gap: .75rem; grid-template-columns: minmax(300px, .85fr) minmax(0, 1.15fr); }
+#advisor .advisor-card {
+  min-width: 0;
+  margin: 0;
+  padding: var(--advisor-padding);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+#advisor .advisor-card + .advisor-card,
+#advisor #advisor-form,
+#advisor #advisor-result { margin-top: var(--advisor-gap); }
+#advisor #advisor-form, #advisor #advisor-result { display: grid; gap: var(--advisor-gap); align-content: start; }
+#advisor #advisor-form > .advisor-card, #advisor #advisor-result > .advisor-card { margin: 0; }
+#advisor .advisor-card h3 { font: 600 1.0625rem/1.45 var(--heading); margin: 0 0 .7rem; }
+#advisor .advisor-card p { margin: .6rem 0 0; overflow-wrap: anywhere; }
+#advisor .advisor-safety p { color: var(--muted); font-size: .9375rem; line-height: 1.55; }
+#advisor .advisor-question-card label { margin-bottom: .65rem; letter-spacing: .06em; }
+#advisor #advisor-question { min-height: 9rem; height: clamp(9rem, 16dvh, 11rem); padding: .8rem .9rem; resize: vertical; }
+#advisor #advisor-help { margin-top: .7rem; font-size: .9375rem; line-height: 1.55; }
+#advisor .examples { gap: .6rem; margin: 0; }
+#advisor .example { text-align: left; background: var(--background); }
+#advisor .advisor-submit button { width: 100%; }
+#advisor .advisor-state p { color: var(--muted); font-size: .9375rem; }
+#advisor .advisor-state .error { color: var(--error); }
+#advisor .advisor-state progress { display: block; margin-top: 1rem; width: 100%; height: .35rem; }
+#advisor .advisor-tip { padding-block: .9rem; border-top: 1px solid var(--border); }
+#advisor .advisor-tip:first-of-type { border-top: 0; padding-top: 0; }
+#advisor .advisor-tip:last-child { padding-bottom: 0; }
+#advisor .advisor-tip h4 { margin: 0; font: 600 1rem/1.5 var(--heading); color: var(--text); text-transform: none; letter-spacing: 0; }
+#advisor .advisor-tip .tags { margin-top: .75rem; }
+#advisor .advisor-tip .priority { color: var(--muted); }
+#advisor .advisor-card ul { margin: .5rem 0 0; padding-left: 1.25rem; }
+#advisor .advisor-card li + li { margin-top: .45rem; }
+#advisor .source-row:last-child { border-bottom: 0; padding-bottom: 0; }
+@media (max-width: 700px) {
+  #advisor .advisor-workbench { display: block; }
+  #advisor .output { margin-top: var(--advisor-gap); }
 }

@@ -200,27 +200,42 @@ function questionBody(id) {
 function similarity(value) {
   return typeof value === 'number' && Number.isFinite(value) ? `Cosine similarity ${value.toFixed(3)}` : 'Similarity unavailable';
 }
+function setAdvisorState(state, message) {
+  const headings = {
+    idle: 'Ready to analyze', changed: 'Developer selection changed',
+    loading: 'Analyzing evidence', complete: 'Analysis ready',
+    empty: 'No analysis available', error: 'Analysis could not complete'
+  };
+  byId('advisor-state').dataset.state = state;
+  setText(byId('advisor-state-title'), headings[state]);
+  byId('advisor-progress').hidden = state !== 'loading';
+  status('advisor-status', message, state === 'error');
+}
+function advisorCard(title) {
+  const card = element('article', null, 'advisor-card analysis-section');
+  card.append(uiElement('h3', title));
+  return card;
+}
 function renderAdvisor(data) {
   appState.advisor = data;
   const result = byId('advisor-result');
   if (!data || typeof data.answer !== 'string' || !data.answer.trim()) {
-    status('advisor-status', 'No analysis was returned. Try a different question.');
+    setAdvisorState('empty', 'No analysis was returned. Try a different question.');
     return;
   }
-  const answer = element('article', null, 'analysis-section');
-  answer.append(uiElement('h3', 'Analysis'), element('p', data.answer, 'prose'));
+  const answer = advisorCard('Analysis');
+  answer.append(element('p', data.answer, 'prose'));
   result.append(answer);
-  const strengths = element('article', null, 'analysis-section');
-  strengths.append(uiElement('h3', 'Demonstrated strengths'));
+  const strengths = advisorCard('Demonstrated strengths');
   const items = element('ul');
   list(data.strengths).forEach(value => items.append(element('li', value)));
   strengths.append(items.children.length ? items : uiElement('p', 'No strengths were returned.', 'muted'));
   result.append(strengths);
-  const tips = element('div', null, 'recommendations');
+  const tips = advisorCard('Recommendations');
   list(data.tips).filter(Boolean).forEach(tip => {
-    const card = element('article', null, 'result-entry');
+    const card = element('article', null, 'advisor-tip');
     const heading = element('div', null, 'result-title');
-    heading.append(element('h3', tip.title || 'Recommendation'));
+    heading.append(tip.title ? element('h4', tip.title) : uiElement('h4', 'Recommendation'));
     if (['HIGH', 'MEDIUM', 'LOW'].includes(tip.priority)) {
       heading.append(uiElement('span', tip.priority, `priority priority-${tip.priority.toLowerCase()}`));
     }
@@ -228,9 +243,9 @@ function renderAdvisor(data) {
     if (list(tip.relatedRepos).length) card.append(tags(tip.relatedRepos));
     tips.append(card);
   });
-  result.append(tips.children.length ? tips : uiElement('p', 'No recommendations were returned.', 'note'));
-  const sources = element('article', null, 'analysis-section');
-  sources.append(uiElement('h3', 'Sources'));
+  if (!list(data.tips).some(Boolean)) tips.append(uiElement('p', 'No recommendations were returned.', 'muted'));
+  result.append(tips);
+  const sources = advisorCard('Sources');
   list(data.sources).filter(Boolean).forEach(source => {
     const row = element('div', null, 'source-row');
     row.append(sourceLink(source.repo, source.sourceReference), uiElement('span', similarity(source.similarity), 'similarity'));
@@ -239,7 +254,7 @@ function renderAdvisor(data) {
   });
   if (!list(data.sources).length) sources.append(uiElement('p', 'No evidence sources were returned.', 'muted'));
   result.append(sources);
-  status('advisor-status', 'Analysis complete. Review recommendations against the source evidence.');
+  setAdvisorState('complete', 'Analysis complete. Review recommendations against the source evidence.');
 }
 const advisorForm = byId('advisor-form');
 let advisorController;
@@ -254,7 +269,7 @@ if (advisorForm) {
     event.preventDefault();
     let id, body;
     try { id = developerId(); body = questionBody('advisor-question'); }
-    catch (error) { status('advisor-status', error.message, true); return; }
+    catch (error) { setAdvisorState('error', error.message); return; }
     const version = ++advisorVersion;
     advisorController?.abort();
     const controller = new AbortController();
@@ -266,14 +281,14 @@ if (advisorForm) {
     appState.advisor = null;
     byId('advisor-result').replaceChildren();
     byId('advisor-result').setAttribute('aria-busy', 'true');
-    status('advisor-status', 'Analyzing repository evidence…');
+    setAdvisorState('loading', 'Analyzing repository evidence…');
     try {
       const data = await request(`/api/v1/developers/${id}/advisor`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body, signal: controller.signal
       });
       if (version === advisorVersion) renderAdvisor(data);
     } catch (error) {
-      if (version === advisorVersion) status('advisor-status', error.name === 'AbortError' ? 'Analysis timed out. Please try again.' : error.message, true);
+      if (version === advisorVersion) setAdvisorState('error', error.name === 'AbortError' ? 'Analysis timed out. Please try again.' : error.message);
     } finally {
       clearTimeout(timeout);
       if (version === advisorVersion) {
@@ -292,7 +307,7 @@ if (advisorForm) {
     const button = advisorForm.querySelector('[type="submit"]');
     button.disabled = false;
     setText(button, 'Analyze portfolio');
-    status('advisor-status', 'Developer changed. Run a new analysis.');
+    setAdvisorState('changed', 'Developer changed. Run a new analysis.');
   });
 }
 
