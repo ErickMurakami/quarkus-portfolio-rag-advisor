@@ -29,7 +29,7 @@ class PortfolioPageResourceTest {
 
     @Test
     void shouldRenderLocalAdvisorWithWarningAndEmptyResults() {
-        String html = index.data("localAdvisor", true).render();
+        String html = index.data("localAdvisor", true).data("skillCategories", "LANGUAGE,FRAMEWORK,DATABASE,ARCHITECTURE,TOOL,OTHER").render();
         assertTrue(html.contains("id=\"advisor-form\""));
         assertTrue(html.contains("Repository aliases do not prevent private information"));
         assertTrue(html.contains("id=\"advisor-result\" aria-busy=\"false\"></div>"));
@@ -40,7 +40,8 @@ class PortfolioPageResourceTest {
     @Test
     void shouldServeStylesAndScriptWithCorrectContentTypes() {
         given().when().get("/css/app.css").then().statusCode(200).contentType(containsString("text/css"))
-                .body(containsString("prefers-reduced-motion"), containsString("data-theme='light'"));
+                .body(containsString("prefers-reduced-motion"), containsString("data-theme='light'"),
+                        matchesPattern("(?s)^@import url\\(\'[^\'\\r\\n]*\'\\);.*:root.*"));
         given().when().get("/js/app.js").then().statusCode(200)
                 .contentType(anyOf(containsString("javascript"), containsString("ecmascript")))
                 .body(containsString("/api/v1/developers/"), containsString("textContent"));
@@ -50,6 +51,28 @@ class PortfolioPageResourceTest {
     void shouldServeLanguageDictionaryWithoutDeveloperData() {
         given().when().get("/js/i18n.js").then().statusCode(200)
                 .body(containsString("Perfil do desenvolvedor"), containsString("function translated"));
+    }
+
+    @Test
+    void shouldServeLocalLogosAndBootstrapLocaleBeforeStyles() {
+        given().get("/logos/java.svg?v=pages-1").then().statusCode(200)
+                .contentType(containsString("image/svg+xml")).body(containsString("<svg"));
+        given().get("/logos/groq.svg?v=pages-1").then().statusCode(200)
+                .body(containsString("<svg"));
+        String html = index.data("localAdvisor", false).render();
+        assertTrue(html.indexOf("/js/i18n.js") < html.indexOf("rel=\"stylesheet\""));
+        assertTrue(html.contains("translateUi(initialUiLanguage)"));
+        assertFalse(html.contains("id=\"setup-form\""));
+    }
+
+    @Test
+    void shouldRejectUploadProfileWritesIngestionAndServerTokenEndpointsOutsideDev() {
+        given().contentType("application/json").body("{}").post("/api/v1/developers").then().statusCode(403);
+        given().post("/api/v1/ingestion-jobs/developers/1/public").then().statusCode(403);
+        given().post("/api/v1/ingestion-jobs/developers/1").then().statusCode(403);
+        given().get("/api/v1/github/me/repositories").then().statusCode(403);
+        given().get("/api/v1/github/me/synthetic/private/readme").then().statusCode(403);
+        given().multiPart("githubUsername", "synthetic").post("/api/v1/resumes/import").then().statusCode(403);
     }
 
     @Test

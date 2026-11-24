@@ -86,6 +86,45 @@ const portuguese = {
   'Some evidence searches could not complete. Review the message for each mode.': 'Algumas buscas não foram concluídas. Confira a mensagem de cada modo.',
   'HIGH': 'ALTA', 'MEDIUM': 'MÉDIA', 'LOW': 'BAIXA'
 };
+Object.assign(portuguese, {
+  'Setup': 'Configuração', 'Developer setup': 'Configuração do desenvolvedor',
+  'Setup form': 'Formulário de configuração', 'Ingestion progress': 'Progresso da ingestão',
+  'Create a local profile and index public repositories. Private repositories are never requested by this flow.': 'Cadastre um perfil local e indexe os repositórios públicos. Este fluxo nunca solicita repositórios privados.',
+  'Full name': 'Nome completo', 'GitHub username': 'Usuário do GitHub', 'Profile source': 'Origem do perfil',
+  'Enter skills manually': 'Cadastrar competências manualmente', 'Import PDF resume': 'Importar currículo PDF',
+  'PDF resume (up to 4 MiB)': 'Currículo PDF (até 4 MiB)',
+  'The PDF is temporary. Extracted text is sent to the configured AI provider. Review the returned name and skills before saving. Use only a resume you are authorized to process.': 'O PDF é temporário. O texto extraído é enviado ao provedor de IA configurado. Revise o nome e as competências antes de salvar. Utilize somente um currículo que você tem autorização para processar.',
+  'Extract for review': 'Extrair para revisão', 'Review declared skills': 'Revisar competências declaradas',
+  'Edit names and categories, remove incorrect entries or add missing skills. Nothing is saved by importing a PDF.': 'Corrija nomes e categorias, remova entradas incorretas ou adicione competências. Importar um PDF não salva o perfil.',
+  'Add skill': 'Adicionar competência', 'Remove': 'Remover', 'Skill name': 'Nome da competência', 'Skill category': 'Categoria da competência',
+  'Save profile and index public repositories': 'Salvar perfil e indexar repositórios públicos',
+  'Choose manual entry or PDF import to begin.': 'Escolha o cadastro manual ou a importação de PDF para começar.',
+  'Public repository ingestion': 'Ingestão de repositórios públicos', 'No ingestion job has been started.': 'Nenhuma ingestão foi iniciada.',
+  'Start public ingestion': 'Iniciar ingestão pública', 'Check progress': 'Consultar progresso',
+  'Setup is available only on the local development server. Uploads, profile creation and ingestion are not exposed as public operations.': 'A configuração está disponível apenas no servidor local de desenvolvimento. Uploads, cadastro e ingestão não estão expostos como operações públicas.',
+  'Enter a valid GitHub username (up to 30 characters).': 'Informe um usuário válido do GitHub (até 30 caracteres).',
+  'A profile supports up to 100 skills.': 'Um perfil suporta até 100 competências.',
+  'The server returned an unreadable ingestion response.': 'O servidor retornou uma resposta de ingestão ilegível.',
+  'Repository progress': 'Progresso dos repositórios', 'Total repositories': 'Total de repositórios', 'Processed': 'Processados', 'Skipped': 'Ignorados', 'Failed': 'Falhas', 'Chunks': 'Trechos',
+  'Current repository': 'Repositório atual', 'Next attempt': 'Próxima tentativa',
+  'Ingestion complete. Profile, evidence and analysis tabs are ready.': 'Ingestão concluída. As abas de perfil, evidências e análise estão disponíveis.',
+  'Ingestion failed. Check the local backend configuration before retrying.': 'A ingestão falhou. Verifique a configuração local do backend antes de tentar novamente.',
+  'Ingestion is running. Progress comes from the backend job.': 'Ingestão em andamento. O progresso é informado pelo job do backend.',
+  'Choose a PDF between 1 byte and 4 MiB.': 'Selecione um PDF entre 1 byte e 4 MiB.',
+  'Extracting resume text. Nothing has been saved yet.': 'Extraindo o texto do currículo. Nada foi salvo ainda.',
+  'The resume returned no valid profile data. Use manual entry or try another PDF.': 'O currículo não retornou dados de perfil válidos. Use o cadastro manual ou tente outro PDF.',
+  'Review the extracted name and skills, then save the profile.': 'Revise o nome e as competências extraídos antes de salvar o perfil.',
+  'Resume import timed out. Try again or use manual entry.': 'A importação excedeu o tempo limite. Tente novamente ou use o cadastro manual.',
+  'Enter a full name with up to 60 characters.': 'Informe um nome completo com até 60 caracteres.',
+  'Import and review the PDF before saving, or choose manual entry.': 'Importe e revise o PDF antes de salvar ou escolha o cadastro manual.',
+  'Each skill needs a name (up to 40 characters) and a valid category.': 'Cada competência precisa de nome (até 40 caracteres) e categoria válida.',
+  'Saving developer profile…': 'Salvando perfil do desenvolvedor…', 'The server did not return a developer ID.': 'O servidor não retornou o ID do desenvolvedor.',
+  'Profile saved. Starting public repository ingestion.': 'Perfil salvo. Iniciando a ingestão de repositórios públicos.',
+  'Operations are available only in the local development demo.': 'As operações estão disponíveis apenas na demonstração local de desenvolvimento.',
+  'A profile with this username or an active ingestion job may already exist.': 'Já pode existir um perfil com esse usuário ou um job de ingestão ativo.',
+  'The upload exceeds the supported size.': 'O upload excede o tamanho permitido.'
+});
+
 function translated(text, language) {
   if (language !== 'pt') return text;
   if (portuguese[text]) return portuguese[text];

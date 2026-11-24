@@ -1,0 +1,108 @@
+// Optional real-browser QA. Start local Quarkus dev mode and Firefox WebDriver
+// BiDi first (see README). All /api requests are replaced with synthetic fixtures.
+// Writes README screenshots. No real PDF, database or AI provider is used.
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
+(async () => {
+  const ws = new WebSocket(process.env.RAG_BROWSER_WS || 'ws://127.0.0.1:19224/session');
+  await new Promise((resolve,reject) => { ws.onopen=resolve; ws.onerror=reject; });
+  let sequence=0; const pending=new Map();
+  ws.onmessage=e=>{const m=JSON.parse(e.data);if(pending.has(m.id)){const p=pending.get(m.id);pending.delete(m.id);m.type==='error'?p.reject(new Error(JSON.stringify(m))):p.resolve(m.result);}};
+  const call=(method,params={})=>new Promise((resolve,reject)=>{const id=++sequence;pending.set(id,{resolve,reject});ws.send(JSON.stringify({id,method,params}));});
+  let context;
+  try {
+    await call('session.new',{capabilities:{alwaysMatch:{acceptInsecureCerts:true}}});
+    ({context}=await call('browsingContext.create',{type:'tab'}));
+    await call('browsingContext.setViewport',{context,viewport:{width:1440,height:900},devicePixelRatio:1});
+    await call('network.setCacheBehavior',{contexts:[context],cacheBehavior:'bypass'});
+    await call('script.addPreloadScript',{contexts:[context],functionDeclaration:`() => {
+      try { if (!sessionStorage.getItem('qa-bootstrap')) { localStorage.setItem('portfolio-language','pt'); localStorage.setItem('portfolio-theme','light'); sessionStorage.setItem('qa-bootstrap','1'); } } catch {}
+      window.qa={frames:[],calls:[],errors:[],jobChecks:0};
+      addEventListener('error',e=>qa.errors.push(e.message));
+      addEventListener('unhandledrejection',e=>qa.errors.push(String(e.reason)));
+      const sample=()=>{const title=document.getElementById('profile-title');if(title&&getComputedStyle(title).visibility==='visible')qa.frames.push({lang:document.documentElement.lang,title:title.textContent});requestAnimationFrame(sample);};requestAnimationFrame(sample);
+      const nativeFetch=window.fetch;
+      const skills=[{name:'Java 21',category:'LANGUAGE'},{name:'Kotlin',category:'LANGUAGE'},{name:'Python',category:'LANGUAGE'},{name:'Quarkus',category:'FRAMEWORK'},{name:'Spring Boot',category:'FRAMEWORK'},{name:'FastAPI',category:'FRAMEWORK'},{name:'PostgreSQL',category:'DATABASE'},{name:'Redis',category:'DATABASE'},{name:'Ports and adapters',category:'ARCHITECTURE'},{name:'Docker',category:'TOOL'},{name:'GitHub Actions',category:'TOOL'},{name:'LangChain4j',category:'TOOL'},{name:'Mockito',category:'TOOL'}];
+      const profile={id:42,fullName:'Synthetic Developer',githubUsername:'synthetic',skills};
+      const job={jobId:'browser-synthetic-job',devId:42,status:'PENDING',totalRepositories:0,processedRepositories:0,skippedRepositories:0,failedRepositories:0,totalChunks:0,currentRepository:null,nextAttemptAt:null};
+      window.fetch=async(url,options={})=>{
+        if(!String(url).startsWith('/api/'))return nativeFetch(url,options);
+        qa.calls.push({url:String(url),method:options.method??'GET',body:typeof options.body==='string'?JSON.parse(options.body):null});
+        let data;
+        if(String(url).endsWith('/resumes/import')){if(options.body.get('githubUsername')!=='synthetic')throw Error('Wrong multipart contract');data={fullName:'Synthetic Import',githubUsername:'synthetic',skills:skills.slice(0,2)};}
+        else if(String(url)==='/api/v1/developers')data={...profile,...JSON.parse(options.body)};
+        else if(String(url).endsWith('/public'))data=job;
+        else if(String(url).includes('/ingestion-jobs/'))data=++qa.jobChecks===1?{...job,status:'WAITING_RATE_LIMIT',totalRepositories:3,nextAttemptAt:'2026-11-24T12:00:00Z'}:{...job,status:'COMPLETED',totalRepositories:3,processedRepositories:2,skippedRepositories:1,totalChunks:12};
+        else if(String(url).includes('/retrieval'))data=[{repo:'synthetic-public',content:'Synthetic evidence: schema migrations, repository tests and documented API contracts.',sourceReference:'https://github.com/synthetic/public',similarity:.87},{repo:'synthetic-public',content:'Synthetic second chunk from the same repository.',sourceReference:'https://github.com/synthetic/public',similarity:.79}];
+        else if(String(url).endsWith('/advisor'))data={answer:'Do not translate this synthetic answer.',strengths:['Synthetic test coverage'],tips:[{title:'Document the API',description:'Synthetic recommendation to add request examples.',priority:'HIGH',relatedRepos:['synthetic-public']}],sources:[{repo:'synthetic-public',sourceReference:'https://github.com/synthetic/public',similarity:.87},{repo:'Private Repository 1',sourceReference:null,similarity:.8}]};
+        else data=profile;
+        return new Response(JSON.stringify(data),{headers:{'Content-Type':'application/json'}});
+      };
+    }`});
+    const evaluate=async expression=>{const r=await call('script.evaluate',{expression,target:{context},awaitPromise:true});if(r.type==='exception')throw new Error(JSON.stringify(r));return r.result.value;};
+    const wait=expression=>evaluate(`new Promise((resolve,reject)=>{let n=0;const check=()=>{if(${expression})resolve(true);else if(++n>200)reject(Error('Wait failed: '+${JSON.stringify(expression)}));else setTimeout(check,30);};check();})`);
+    const shot=async name=>{const r=await call('browsingContext.captureScreenshot',{context});fs.writeFileSync('docs/images/'+name,Buffer.from(r.data,'base64'));};
+    await call('browsingContext.navigate',{context,url:(process.env.RAG_UI_URL || 'http://127.0.0.1:18400/')+'?developerId=42',wait:'complete'});
+    await wait(`document.querySelectorAll('#profile-result .skill-group').length===5`);
+    assert.equal(await evaluate(`getComputedStyle(document.querySelector('header .topbar')).display`),'grid');
+    assert.equal(await evaluate(`getComputedStyle(document.body).getPropertyValue('--background').trim()`),'#f3f6fb'); // OS default in this QA profile.
+    assert.equal(await evaluate(`getComputedStyle(document.getElementById('profile-result')).display`),'block');
+    assert.equal(await evaluate(`document.documentElement.scrollHeight<=innerHeight`),true);
+    await wait(`[...document.querySelectorAll('#profile-result img')].every(i=>i.complete&&i.naturalWidth>0)`);
+    assert.equal(await evaluate(`[...document.querySelectorAll('.technology-logo')].every(i=>getComputedStyle(i).backgroundColor==='rgba(0, 0, 0, 0)')`),true);
+    assert.equal(await evaluate(`document.querySelector('.profile-content').getBoundingClientRect().height < document.querySelector('#profile').clientHeight * .95`),true);
+    await shot('profile-pt.png');
+    await evaluate(`document.getElementById('tab-retrieval').click();document.getElementById('retrieval-question').value='Pergunta sintética';document.querySelector('#retrieval-form button[value=compare]').click();`);
+    await wait(`document.querySelectorAll('.evidence-panel article').length===4`);
+    await evaluate(`document.getElementById('language-toggle').click()`);
+    assert.equal(await evaluate(`document.documentElement.lang`),'en');
+    const calls=await evaluate(`qa.calls.length`);
+    await evaluate(`document.getElementById('tab-profile').click();document.getElementById('tab-retrieval').click();document.getElementById('language-toggle').click();document.getElementById('language-toggle').click();`);
+    assert.equal(await evaluate(`qa.calls.length`),calls);
+    assert.equal(await evaluate(`document.getElementById('retrieval-question').value`),'Pergunta sintética');
+    assert.equal(await evaluate(`document.querySelectorAll('.evidence-panel article').length`),4);
+    await shot('retrieval-en.png');
+    await evaluate(`document.getElementById('tab-advisor').click();document.getElementById('advisor-question').value='Pergunta de análise';document.getElementById('advisor-form').requestSubmit()`);
+    await wait(`document.querySelector('#advisor-result .prose')`);
+    await evaluate(`document.getElementById('language-toggle').click()`);
+    assert.equal(await evaluate(`document.querySelector('#advisor-result .prose').textContent`),'Do not translate this synthetic answer.');
+    assert.equal(await evaluate(`document.querySelectorAll('#advisor-result a').length`),1);
+    await shot('advisor-analysis-pt.png');
+    await evaluate(`document.getElementById('tab-setup').click();document.getElementById('setup-username').value='synthetic';document.getElementById('setup-mode').value='pdf';document.getElementById('setup-mode').dispatchEvent(new Event('change'));const dt=new DataTransfer();dt.items.add(new File(['%PDF-synthetic QA only'],'resume.pdf',{type:'application/pdf'}));document.getElementById('setup-file').files=dt.files;document.getElementById('setup-import').click();`);
+    await wait(`document.getElementById('setup-name').value==='Synthetic Import'`);
+    await evaluate(`document.querySelector('#setup-skills input').value='Corrected Java';document.querySelector('#setup-skills input').dispatchEvent(new Event('input'));document.getElementById('language-toggle').click();document.getElementById('language-toggle').click();`);
+    assert.equal(await evaluate(`document.querySelector('#setup-skills input').value`),'Corrected Java');
+    await evaluate(`document.querySelector('#setup .controls').scrollTop=document.querySelector('#setup .controls').scrollHeight`);
+    await shot('setup-review-pt.png');
+    await evaluate(`document.getElementById('setup-form').requestSubmit()`);
+    await wait(`document.querySelector('.job-state')?.textContent==='PENDING'`);
+    assert.equal(await evaluate(`document.getElementById('tab-retrieval').disabled`),true);
+    await evaluate(`document.getElementById('setup-check-job').click()`);
+    await wait(`document.querySelector('.job-state')?.textContent==='WAITING_RATE_LIMIT'`);
+    await evaluate(`document.getElementById('setup-check-job').click()`);
+    await wait(`document.querySelector('.job-state')?.textContent==='COMPLETED'`);
+    assert.equal(await evaluate(`document.getElementById('tab-retrieval').disabled`),false);
+    assert.equal(await evaluate(`qa.calls.find(c=>c.url==='/api/v1/developers').body.skills[0].name`),'Corrected Java');
+    assert.equal(await evaluate(`qa.calls.filter(c=>c.url.endsWith('/public')).length`),1);
+    assert.equal(await evaluate(`document.documentElement.scrollHeight<=innerHeight`),true);
+    await shot('setup-progress-pt.png');
+    await evaluate(`document.getElementById('theme-toggle').click();document.getElementById('tab-profile').click()`);
+    assert.equal(await evaluate(`getComputedStyle(document.body).getPropertyValue('--background').trim()`),'#0d111b');
+    await wait(`document.querySelector('#profile-result .skill-group')`);
+    await shot('profile-dark-pt.png');
+    assert.equal(await evaluate(`qa.frames.some(f=>(f.lang==='pt-BR'&&f.title==='Developer Profile')||(f.lang==='en'&&f.title==='Perfil do desenvolvedor'))`),false);
+    await evaluate(`document.getElementById('language-toggle').click()`);
+    await call('browsingContext.reload',{context,wait:'complete'});
+    await wait(`document.querySelector('#profile-result h3')`);
+    assert.equal(await evaluate(`document.documentElement.lang`),'en');
+    assert.equal(await evaluate(`qa.frames.some(f=>f.lang!=='en'||f.title!=='Developer Profile')`),false);
+    await call('browsingContext.setViewport',{context,viewport:{width:1024,height:600},devicePixelRatio:1});
+    assert.equal(await evaluate(`document.documentElement.scrollHeight<=innerHeight`),true);
+    await call('browsingContext.setViewport',{context,viewport:{width:390,height:844},devicePixelRatio:1});
+    await evaluate(`document.getElementById('language-toggle').click()`);
+    assert.equal(await evaluate(`document.documentElement.scrollWidth<=innerWidth`),true);
+    await shot('profile-mobile-pt.png');
+    assert.equal(await evaluate(`qa.errors.length`),0);
+    console.log('PASS: CSS computed rules, content-sized profile, local logos, both themes, first-paint locale samples, reload persistence, result/state retention, PDF review, public job progression, desktop/mobile. Synthetic APIs only.');
+  } finally { await call('session.end').catch(()=>{}); ws.close(); }
+})().catch(e=>{console.error(e);process.exitCode=1;});

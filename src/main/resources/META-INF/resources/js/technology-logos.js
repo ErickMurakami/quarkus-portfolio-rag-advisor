@@ -9,8 +9,9 @@ const technologyLogos = [
   ['quarkus', ['quarkus']], ['fastapi', ['fastapi', 'fast api']],
   ['postgresql', ['postgresql', 'postgres', 'postgres sql']], ['mysql', ['mysql', 'my sql']],
   ['redis', ['redis']], ['supabase', ['supabase']],
-  ['langchain', ['langchain', 'lang chain']], ['langchain4j.ico', ['langchain4j', 'langchain 4j']],
-  ['googlegemini', ['gemini', 'google gemini']],
+  ['langchain', ['langchain', 'lang chain']],
+  ['googlegemini', ['gemini', 'google gemini']], ['groq', ['groq']],
+  ['flyway', ['flyway']], ['hibernate', ['hibernate', 'hibernate orm']],
   ['docker', ['docker']], ['podman', ['podman']], ['git', ['git']],
   ['githubactions', ['github actions', 'githubactions']], ['jenkins', ['jenkins']],
   ['junit', ['junit', 'junit 5', 'junit5', 'junit jupiter']], ['jira', ['jira', 'atlassian jira']]
@@ -24,3 +25,5 @@ function technologyLogo(name) {
   const key = technologyKey(name);
   return technologyLogoPaths.get(key) ?? technologyLogoPaths.get(key.replace(/\d+(?:\d)*$/, '')) ?? null;
 }
+
+const monochromeTechnologyLogos = new Set(['/logos/langchain.svg', '/logos/googlegemini.svg']);

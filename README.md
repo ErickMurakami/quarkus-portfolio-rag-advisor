@@ -122,7 +122,7 @@ The pgvector repository tests require Docker and report skipped when unavailable
 ### Presentation workspace (PT / EN)
 
 The UI uses a single `100dvh` desktop workspace. The header, developer selector and
-three tabs remain visible. Controls and output scroll independently. Narrow screens
+four tabs remain visible. Controls and output scroll independently. Narrow screens
 allow document scrolling for readability. Tab switching retains
 form inputs, scroll positions and results without fetching again. Keyboard navigation
 supports Left/Right, Home and End; Tab moves into the selected content panel.
@@ -154,7 +154,7 @@ nem dados fixos da aplicação. Não foram feitas chamadas a Gemini, Groq ou Git
 ### Perfil — português
 
 Cabeçalho compacto, seleção compartilhada e competências declaradas por categoria.
-A página desktop permanece dentro da viewport; listas longas rolam dentro do card.
+A página desktop permanece dentro da viewport; o inventário usa altura natural e rola apenas quando necessário.
 
 ![Perfil em português](docs/images/profile-pt.png)
 
@@ -176,3 +176,96 @@ não representa autenticação nem garantia de confidencialidade.
 A versão mobile prioriza legibilidade e permite rolagem quando necessário.
 
 <img src="docs/images/profile-mobile-pt.png" alt="Perfil em português na versão mobile" width="390">
+
+
+## Local developer setup
+
+Run `./mvnw quarkus:dev -Dquarkus.http.host=127.0.0.1`, then open
+<http://localhost:8000/> and select **Configuração / Setup**. Configure the existing
+Gemini and Groq credentials locally to perform actual extraction and embeddings;
+never put credentials in the browser. The setup flow does not use the server's
+GitHub token: repository discovery and README reads use the public GitHub API.
+
+1. Enter a name and GitHub username. Choose manual skills or PDF import.
+2. PDF import calls `POST /api/v1/resumes/import` with multipart `file` and
+   `githubUsername`. Review/correct the extracted name and skills. Import alone
+   never creates a developer. Manual entry uses the actual `SkillCategory` values
+   supplied by Qute from the Java enum, including `OTHER`.
+3. Save through `POST /api/v1/developers`. The returned ID updates the shared
+   selection and `?developerId=`. Only the reviewed profile is saved.
+4. The UI starts `POST /api/v1/ingestion-jobs/developers/{id}/public`, which always
+   creates the job with `includePrivate=false`. The legacy job endpoint retains
+   its private behavior and is never used by Setup.
+5. Poll `GET /api/v1/ingestion-jobs/{jobId}` for the real status, repository counts,
+   chunks, current repository and next retry time. `WAITING_RATE_LIMIT` does not
+   re-submit ingestion. Completion unlocks the new developer's other tabs.
+   Failure permits retrying ingestion without creating another profile.
+
+An already saved profile stays saved if starting ingestion fails. The current job
+DTO has no error-message field, so the UI shows `FAILED` and the provided counters
+with a generic local-configuration message. It does not invent failure details.
+
+### Processing limits and privacy boundary
+
+**All `/api/v1/` operations are local-demo operations**, including profile reads,
+uploads, retrieval, job status, `/github/me`, private ingestion and Advisor. A request
+filter rejects them outside Quarkus dev mode, rejects non-loopback clients in dev,
+and rejects cross-origin browser requests. The static Qute UI can render outside dev,
+but its operational APIs are unavailable. This is not user authentication, ownership
+verification or tenant isolation. A numeric developer ID is never an authorization
+credential. Do not expose dev mode through a proxy, tunnel or public listener;
+proxying from loopback does not establish user authorization. Public deployment
+needs real authorization, data isolation, rate/cost controls and an abuse review.
+
+Uploads are limited to 4 MiB (within the application's existing 5 MB HTTP body limit),
+100 PDF pages and 100,000 extracted characters before sending text to the configured
+AI provider. The upload is deleted in a `finally` block after extraction or failure;
+no permanent PDF copy is created by the application. Quarkus also manages temporary
+multipart files. Extracted text leaves the server for the configured Groq-compatible
+provider; it is not made anonymous merely by omitting the original PDF. In-memory UI
+state is not saved to browser storage; only language/theme preferences are persisted.
+The existing Advisor privacy limitation still applies to generated free text.
+
+### Logos, language and browser checks
+
+Technology labels retain the exact API skill names. The case-insensitive local
+allowlist is in `js/technology-logos.js`. Unknown names (including Mockito, IRIS and
+LangChain4j until a suitable transparent asset is selected) stay text-only. No profile skill is added
+because an icon exists. Only displayed logos are loaded. Devicon/Simple Icons
+licenses and official project mark sources are recorded in
+`src/main/resources/META-INF/resources/logos/NOTICE.txt` and adjacent license files.
+Where available, the exact transparent SVGs from the author’s GitHub Pages are
+used (Java, Spring, Quarkus, PostgreSQL, Redis, Docker, Groq, Flyway, Hibernate).
+Logos have no background tiles; monochrome marks adapt to the dark theme.
+
+The small language dictionary initializes locale/theme in the document head before
+styles paint. A body-end call translates labels before deferred application code;
+only untranslated labels are briefly withheld during parsing. Language switching
+runs synchronously and skips unchanged nodes, without toggling page visibility,
+recreating results or making API calls. Backend data and existing Advisor prose
+are never translated. The header's appearance is retained; Setup adds one requested
+navigation tab. CSS/JS asset URLs are versioned to avoid stale cached styles.
+
+`node --test --experimental-test-isolation=none src/test/js/app.test.cjs` covers
+profile, retrieval, Advisor, language retention and Setup with synthetic responses.
+For optional Firefox QA, start an isolated browser with
+`firefox --headless --no-remote --profile /tmp/rag-qa-firefox --remote-debugging-port 19224 about:blank`
+(create that profile directory first). Run `node src/test/js/browser-qa.cjs` against
+an already running local dev server. `RAG_UI_URL` (default
+`http://127.0.0.1:18400/`) and `RAG_BROWSER_WS` (default
+`ws://127.0.0.1:19224/session`) select the server and browser. The script intercepts
+all `/api` requests with synthetic fixtures, checks computed CSS rules, local logos,
+both themes, locale frame samples/reload persistence, form/result retention and the
+PDF-review/public-job flow. It writes example screenshots; it does not establish
+live Groq/Gemini integration. The CSS check catches malformed imports that can
+silently discard the root design tokens.
+
+### Setup examples (synthetic data)
+
+![Resume review before saving](docs/images/setup-review-pt.png)
+
+![Public ingestion progress](docs/images/setup-progress-pt.png)
+
+![Advisor with a synthetic answer](docs/images/advisor-analysis-pt.png)
+
+![Profile in dark theme](docs/images/profile-dark-pt.png)

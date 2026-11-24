@@ -45,8 +45,10 @@ async function request(url, options = {}) {
   if (!response.ok) {
     const messages = {
       400: 'The request was rejected. Check the developer ID and question.',
-      403: 'Advisor analysis is available only in the local development demo.',
+      403: 'Operations are available only in the local development demo.',
       404: 'The requested developer or resource was not found.',
+      409: 'A profile with this username or an active ingestion job may already exist.',
+      413: 'The upload exceeds the supported size.',
       429: 'The service is busy. Please wait before trying again.'
     };
     // Never display server error bodies: they can include internal or private data.
@@ -80,7 +82,8 @@ function technologyTag(name) {
   const path = technologyLogo(name);
   if (path) {
     const logo = element('img', null, 'technology-logo');
-    logo.src = path;
+    logo.src = path + '?v=pages-1';
+    if (monochromeTechnologyLogos.has(path)) logo.dataset.monochrome = 'true';
     logo.alt = '';
     logo.width = 20;
     logo.height = 20;
@@ -385,9 +388,9 @@ function updateSelectionUrl() {
   else url.searchParams.delete('developerId');
   window.history.replaceState(null, '', url);
 }
-const tabNames = ['profile', 'retrieval', 'advisor'];
+const tabNames = ['profile', 'retrieval', 'advisor', 'setup'];
 function activateTab(name, focus = false) {
-  if (!tabNames.includes(name)) return;
+  if (!tabNames.includes(name) || byId(`tab-${name}`).disabled) return;
   appState.activeTab = name;
   for (const current of tabNames) {
     const selected = current === name;
@@ -400,11 +403,13 @@ function activateTab(name, focus = false) {
 for (const [index, name] of tabNames.entries()) {
   byId(`tab-${name}`).addEventListener('click', () => activateTab(name));
   byId(`tab-${name}`).addEventListener('keydown', event => {
+    const available = tabNames.filter(tab => !byId(`tab-${tab}`).disabled);
+    const currentIndex = available.indexOf(name);
     const offset = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
-    let target = offset ? (index + offset + tabNames.length) % tabNames.length : null;
+    let target = offset ? (currentIndex + offset + available.length) % available.length : null;
     if (event.key === 'Home') target = 0;
-    if (event.key === 'End') target = tabNames.length - 1;
-    if (target != null) { event.preventDefault(); activateTab(tabNames[target], true); }
+    if (event.key === 'End') target = available.length - 1;
+    if (target != null) { event.preventDefault(); activateTab(available[target], true); }
   });
 }
 function applyLanguage() {

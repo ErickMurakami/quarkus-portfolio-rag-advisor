@@ -1,5 +1,9 @@
 package dev.erickmurakami.portfolio.interfaces.rest;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
+import dev.erickmurakami.portfolio.domain.enums.SkillCategory;
 import io.quarkus.qute.Template;
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.common.annotation.Blocking;
@@ -18,6 +22,8 @@ public class PortfolioPageResource {
     @Blocking
     @Produces(MediaType.TEXT_HTML)
     public String index() {
-        return index.data("localAdvisor", LaunchMode.current() == LaunchMode.DEVELOPMENT).render();
+        return index.data("localAdvisor", LaunchMode.current() == LaunchMode.DEVELOPMENT)
+                .data("skillCategories", Arrays.stream(SkillCategory.values()).map(Enum::name).collect(Collectors.joining(",")))
+                .render();
     }
 }

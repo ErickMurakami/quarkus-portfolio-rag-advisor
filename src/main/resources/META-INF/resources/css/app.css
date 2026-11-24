@@ -1,9 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Hanken+Grotesk:wght@400;
-/* Hide only untranslated labels during parsing; the body-end translation reveals
-   them before deferred app code runs. No visibility toggle is used on switches. */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Hanken+Grotesk:wght@400;500;600;700&family=Open+Sans:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Hide only untranslated labels during parsing, never the whole page. */
 html[data-language-pending='true'] [data-i18n] { visibility: hidden; }
 html[data-language-pending='true'] [data-i18n-placeholder]::placeholder { color: transparent; }
-500;600;700&family=Open+Sans:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
   color-scheme: dark;
@@ -268,7 +267,29 @@ footer { display: flex; justify-content: space-between; gap: 1rem; border-top: 1
 }
 .technologies { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem 1.4rem; }
 .technology { display: inline-flex; align-items: center; gap: .5rem; font-size: 1rem; line-height: 1.6; }
-.technology-logo { display: block; width: 20px; height: 20px; object-fit: contain; flex: none; background: #fff; border-radius: 3px; padding: 1px; }
+.technology-logo { display: block; width: 20px; height: 20px; object-fit: contain; flex: none; background: transparent; border-radius: 0; padding: 0; }
 .application footer .technology { border: 0; background: none; color: var(--muted); padding: 0; font-size: .75rem; }
 .application footer .technology > span { border: 0; background: none; padding: 0; font: inherit; color: inherit; }
 .application footer .technology-logo { width: 16px; height: 16px; }
+.setup-fields { border: 0; padding: 0; margin: 0 0 1rem; min-width: 0; }
+.setup-fields > label { margin-top: .85rem; }
+select { font: inherit; color: var(--text); background: var(--background); border: 1px solid var(--border); border-radius: var(--radius); padding: .65rem; max-width: 100%; }
+.setup-fields > select { width: 100%; }
+.setup-review-heading { margin: 1.25rem 0 .5rem; }
+.skill-editor { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr) auto; gap: .5rem; margin-bottom: .65rem; }
+.skill-editor input { min-width: 0; padding: .5rem; }
+.skill-editor select { min-width: 0; }
+.skill-editor button { padding: .4rem .6rem; font-size: .875rem; }
+#setup-pdf-fields { padding-top: .75rem; }
+#setup-pdf-fields .notice { margin-block: 1rem; }
+#setup-status { margin-block: 1rem; }
+.job-state { font: 500 1rem/1.6 var(--mono); color: var(--accent); }
+progress { width: 100%; height: .65rem; accent-color: var(--primary); }
+.job-counts { display: grid; grid-template-columns: 1fr auto; gap: .6rem 1rem; }
+.job-counts dt { color: var(--muted); }
+.job-counts dd { margin: 0; font-family: var(--mono); }
+.application [role='tab']:disabled { cursor: not-allowed; opacity: .55; }
+@media (max-width: 700px) { .skill-editor { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .skill-editor button { grid-column: 2; justify-self: end; } }
+.application footer .app-technologies > .technology { display: inline-flex; align-items: center; gap: .35rem; }
+
+:root[data-theme='dark'] .technology-logo[data-monochrome='true'] { filter: invert(1); }

@@ -18,7 +18,8 @@ class Node {
   set textContent(text) { this._text = String(text); this.children = []; }
   get textContent() { return this._text + this.children.map(node => node.textContent).join(' '); }
   set innerHTML(_) { throw new Error('Untrusted HTML rendering is forbidden'); }
-  append(...nodes) { this.children.push(...nodes); }
+  append(...nodes) { nodes.forEach(node => { node.parent = this; }); this.children.push(...nodes); }
+  remove() { if (this.parent) this.parent.children = this.parent.children.filter(node => node !== this); }
   replaceChildren(...nodes) { this._text = ''; this.children = nodes; }
   setAttribute(name, value) { this.attributes[name] = value; if (name === 'src') this.src = value; }
   getAttribute(name) { return this.attributes[name] ?? null; }
@@ -42,11 +43,11 @@ class Node {
 }
 function environment({ local = true, language = 'en', url = 'http://localhost/', fetch = async () => ({ ok: true, json: async () => ({}) }) } = {}) {
   const nodes = new Map();
-  for (const file of ['index.html', 'partials/advisor.html', 'partials/retrieval.html']) {
+  for (const file of ['index.html', 'partials/advisor.html', 'partials/retrieval.html', 'partials/setup.html']) {
     const html = readFileSync(path.join(root, 'templates', file), 'utf8');
     for (const match of html.matchAll(/id="([^"]+)"/g)) nodes.set(match[1], new Node());
   }
-  if (!local) nodes.delete('advisor-form');
+  if (!local) { nodes.delete('advisor-form'); nodes.delete('setup-form'); }
   const button = value => { const node = new Node('button'); node.type = 'submit'; node.value = value; return node; };
   if (local) {
     const example = new Node('button'); example.dataset.question = 'Synthetic question';
@@ -54,6 +55,11 @@ function environment({ local = true, language = 'en', url = 'http://localhost/',
   }
   const mode = new Node('input'); mode.name = 'mode'; mode.value = 'FOCUSED'; mode.checked = true;
   nodes.get('retrieval-form').append(mode, button('search'), button('compare'));
+  if (local) {
+    nodes.get('setup-root').dataset.categories = 'LANGUAGE,FRAMEWORK,DATABASE,ARCHITECTURE,TOOL,OTHER';
+    nodes.get('setup-save').type = 'submit';
+    nodes.get('setup-form').append(nodes.get('setup-profile-fields'), nodes.get('setup-save'));
+  }
   const document = new Node();
   document.children = [...nodes.values()];
   const window = new Node();
@@ -66,7 +72,7 @@ function environment({ local = true, language = 'en', url = 'http://localhost/',
   const timers = new Map(); let timerId = 0;
   const calls = [];
   const context = vm.createContext({
-    document, window, Event, URL, AbortController, AbortSignal,
+    document, window, Event, URL, AbortController, AbortSignal, FormData, File,
     matchMedia: () => ({ matches: false }),
     localStorage: { getItem: key => key === 'portfolio-language' ? language : null, setItem() {} },
     setTimeout: (fn, delay) => { timers.set(++timerId, { fn, delay }); return timerId; },
@@ -76,11 +82,15 @@ function environment({ local = true, language = 'en', url = 'http://localhost/',
   vm.runInContext(readFileSync(path.join(root, 'META-INF/resources/js/i18n.js'), 'utf8'), context);
   vm.runInContext(readFileSync(path.join(root, 'META-INF/resources/js/technology-logos.js'), 'utf8'), context);
   vm.runInContext(script, context);
+  vm.runInContext(readFileSync(path.join(root, 'META-INF/resources/js/setup.js'), 'utf8'), context);
   return {
     nodes, calls, document, window,
     logo: name => vm.runInContext(`technologyLogo(${JSON.stringify(name)})`, context),
     state: () => JSON.parse(vm.runInContext('JSON.stringify(appState)', context)),
     get: id => nodes.get(id),
+    runTimer: async delay => {
+      for (const [id, timer] of [...timers]) if (timer.delay === delay) { timers.delete(id); await timer.fn(); }
+    },
     runDebounce: async () => {
       for (const [id, timer] of [...timers]) if (timer.delay === 350) { timers.delete(id); await timer.fn(); }
     }
@@ -270,8 +280,8 @@ test('tabs support arrow keys, Home and End with managed focus', async () => {
   assert.equal(env.get('tab-retrieval').focused, true);
   assert.equal(env.get('tab-profile').attributes['aria-selected'], 'false');
   await env.get('tab-retrieval').emit('keydown', { key: 'End' });
-  assert.equal(env.state().activeTab, 'advisor');
-  await env.get('tab-advisor').emit('keydown', { key: 'Home' });
+  assert.equal(env.state().activeTab, 'setup');
+  await env.get('tab-setup').emit('keydown', { key: 'Home' });
   assert.equal(env.state().activeTab, 'profile');
 });
 
@@ -364,4 +374,113 @@ test('initial locale is selected before app startup and unchanged labels retain 
   assert.equal(status.textContent, 'Carregando perfil do desenvolvedor…');
   assert.equal(result.textContent, 'Analysis');
   assert.equal(env.calls.length, 0);
+});
+
+const pendingJob = { jobId: 'synthetic-job', devId: 42, status: 'PENDING', totalRepositories: 0, processedRepositories: 0, skippedRepositories: 0, failedRepositories: 0, totalChunks: 0, currentRepository: null, nextAttemptAt: null };
+function setupIdentity(env) { env.get('setup-name').value = 'Synthetic Developer'; env.get('setup-username').value = 'synthetic'; }
+
+test('manual setup creates a reviewed profile, stores its ID, starts only public ingestion and polls real counters', async () => {
+  const env = environment({ fetch: async (url, options) => {
+    if (url === '/api/v1/developers') return response({ id: 42 });
+    if (url.endsWith('/public')) return response(pendingJob);
+    if (url.endsWith('/synthetic-job')) return response({ ...pendingJob, status: 'COMPLETED', totalRepositories: 3, processedRepositories: 2, skippedRepositories: 1, totalChunks: 9 });
+    throw new Error('Unexpected API request');
+  } });
+  setupIdentity(env);
+  await env.get('setup-add-skill').emit('click');
+  const row = env.get('setup-skills').children[0];
+  row.children[0].value = 'Java'; await row.children[0].emit('input');
+  row.children[1].value = 'LANGUAGE'; await row.children[1].emit('change');
+  await submit(env, 'setup-form');
+  const saved = JSON.parse(env.calls[0][1].body);
+  assert.deepEqual(saved, { fullName: 'Synthetic Developer', githubUsername: 'synthetic', skills: [{ name: 'Java', category: 'LANGUAGE' }] });
+  assert.equal(env.calls[1][0], '/api/v1/ingestion-jobs/developers/42/public');
+  assert.match(env.window.location.href, /developerId=42/);
+  assert.equal(env.get('tab-retrieval').disabled, true);
+  assert.equal(env.state().activeTab, 'setup');
+  assert.match(env.get('setup-job').textContent, /PENDING/);
+  await env.runTimer(3000);
+  assert.equal(env.get('tab-retrieval').disabled, false);
+  assert.equal(env.get('tab-profile').disabled, false);
+  assert.equal(env.state().setup.job.totalChunks, 9);
+  assert.match(env.get('setup-job').textContent, /COMPLETED/);
+  assert.ok(env.calls.every(([url]) => !url.includes('/github/me')));
+});
+
+test('PDF import uses multipart and returns editable skills before any profile is created', async () => {
+  const env = environment({ fetch: async url => url === '/api/v1/developers' ? response({ id: 42 }) : url.endsWith('/public') ? response(pendingJob) : response({ fullName: 'Extracted Name', githubUsername: 'synthetic', skills: [{ name: 'Java', category: 'LANGUAGE' }, { name: 'Wrong skill', category: 'OTHER' }] }) });
+  setupIdentity(env); env.get('setup-mode').value = 'pdf'; await env.get('setup-mode').emit('change');
+  env.get('setup-file').files = [new File(['%PDF-synthetic'], 'resume.pdf', { type: 'application/pdf' })];
+  await env.get('setup-import').emit('click');
+  assert.equal(env.calls.length, 1); assert.equal(env.calls[0][0], '/api/v1/resumes/import');
+  assert.equal(env.calls[0][1].body.get('githubUsername'), 'synthetic');
+  assert.equal(env.calls[0][1].headers, undefined);
+  assert.equal(env.get('setup-name').value, 'Extracted Name');
+  assert.match(env.get('setup-status').textContent, /Review the extracted/);
+  const rows = env.get('setup-skills').children;
+  rows[0].children[0].value = 'Corrected Java'; await rows[0].children[0].emit('input');
+  await rows[1].children[2].emit('click');
+  await env.get('setup-add-skill').emit('click');
+  assert.equal(env.state().setup.skills[0].name, 'Corrected Java');
+  assert.equal(env.state().setup.skills.length, 2);
+  await env.get('tab-profile').emit('click'); await env.get('tab-setup').emit('click');
+  await env.get('language-toggle').emit('click');
+  assert.equal(env.get('setup-name').value, 'Extracted Name');
+  assert.equal(rows[0].children[0].value, 'Corrected Java');
+  assert.equal(env.calls.length, 1);
+  const added = env.get('setup-skills').children[1];
+  added.children[0].value = 'Redis'; await added.children[0].emit('input');
+  added.children[1].value = 'DATABASE'; await added.children[1].emit('change');
+  await submit(env, 'setup-form');
+  assert.deepEqual(JSON.parse(env.calls[1][1].body).skills, [{ name: 'Corrected Java', category: 'LANGUAGE' }, { name: 'Redis', category: 'DATABASE' }]);
+});
+
+test('setup rejects absent and oversized PDFs and missing manual data without API calls', async () => {
+  const env = environment();
+  await submit(env, 'setup-form'); assert.equal(env.calls.length, 0);
+  setupIdentity(env);
+  await env.get('setup-import').emit('click'); assert.equal(env.calls.length, 0);
+  env.get('setup-file').files = [{ name: 'large.pdf', size: 4 * 1024 * 1024 + 1 }];
+  await env.get('setup-import').emit('click'); assert.equal(env.calls.length, 0);
+  env.get('setup-mode').value = 'pdf'; await env.get('setup-mode').emit('change');
+  await submit(env, 'setup-form'); assert.equal(env.calls.length, 0);
+  assert.match(env.get('setup-status').textContent, /Import and review/);
+});
+
+test('setup reports failed PDF extraction and never saves an invalid extracted profile', async () => {
+  for (const result of [response(null), response({ fullName: '', skills: [] }), { ok: false, status: 400 }]) {
+    const env = environment({ fetch: async () => result }); setupIdentity(env);
+    env.get('setup-file').files = [new File(['%PDF-test'], 'resume.pdf')];
+    await env.get('setup-import').emit('click');
+    assert.equal(env.state().setup.reviewed, false);
+    assert.equal(env.calls.length, 1);
+    assert.equal(env.get('setup-import').disabled, false);
+    assert.ok(env.get('setup-status').classes.has('error'));
+  }
+});
+
+test('setup preserves a saved ID if ingestion cannot start and retry never creates another profile', async () => {
+  let tries = 0;
+  const env = environment({ fetch: async url => {
+    if (url === '/api/v1/developers') return response({ id: 42 });
+    if (++tries === 1) return { ok: false, status: 500 };
+    return response({ ...pendingJob, status: 'FAILED' });
+  } }); setupIdentity(env);
+  await submit(env, 'setup-form');
+  assert.equal(env.state().setup.developerId, '42');
+  assert.equal(env.get('setup-start-job').hidden, false);
+  await env.get('setup-start-job').emit('click');
+  assert.match(env.get('setup-job').textContent, /FAILED/);
+  assert.equal(env.get('tab-advisor').disabled, true);
+  assert.equal(env.calls.filter(([url]) => url === '/api/v1/developers').length, 1);
+});
+
+test('waiting-for-rate-limit is reported from the job without re-posting ingestion', async () => {
+  const env = environment({ fetch: async url => url === '/api/v1/developers' ? response({ id: 42 })
+    : url.endsWith('/public') ? response(pendingJob)
+    : response({ ...pendingJob, status: 'WAITING_RATE_LIMIT', totalRepositories: 4, currentRepository: 'synthetic-public', nextAttemptAt: '2026-11-24T12:00:00Z' }) });
+  setupIdentity(env); await submit(env, 'setup-form'); await env.runTimer(3000);
+  assert.match(env.get('setup-job').textContent, /WAITING_RATE_LIMIT/);
+  assert.match(env.get('setup-job').textContent, /2026-11-24T12:00:00Z/);
+  assert.equal(env.calls.filter(([url]) => url.endsWith('/public')).length, 1);
 });

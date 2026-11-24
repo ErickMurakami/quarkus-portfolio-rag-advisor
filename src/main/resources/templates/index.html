@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Explore engineering portfolios with semantic evidence and grounded analysis.">
   <title>Portfolio RAG Advisor</title>
-  <script src="/js/i18n.js?v=locale-4"></script>
-  <link rel="stylesheet" href="/css/app.css?v=locale-4">
-  <script src="/js/technology-logos.js?v=logos-1" defer></script>
-  <script src="/js/app.js?v=locale-4" defer></script>
+  <script src="/js/i18n.js?v=onboarding-2"></script>
+  <link rel="stylesheet" href="/css/app.css?v=onboarding-2">
+  <script src="/js/technology-logos.js?v=onboarding-2" defer></script>
+  <script src="/js/app.js?v=onboarding-2" defer></script>
+  <script src="/js/setup.js?v=onboarding-2" defer></script>
 </head>
 <body class="application">
   <a class="skip" href="#main" data-i18n>Skip to content</a>
@@ -29,6 +30,7 @@
         <button id="tab-profile" type="button" role="tab" aria-selected="true" aria-controls="profile" tabindex="0" data-i18n>Profile</button>
         <button id="tab-retrieval" type="button" role="tab" aria-selected="false" aria-controls="retrieval" tabindex="-1" data-i18n>Retrieval Explorer</button>
         <button id="tab-advisor" type="button" role="tab" aria-selected="false" aria-controls="advisor" tabindex="-1" data-i18n>Portfolio Advisor</button>
+        <button id="tab-setup" type="button" role="tab" aria-selected="false" aria-controls="setup" tabindex="-1" data-i18n>Setup</button>
       </nav>
       <div class="selected-context"><strong id="selected-developer" data-i18n>No developer selected</strong><span id="developer-help" class="muted" data-i18n>One developer, shared across all tabs.</span></div>
     </div>
@@ -48,6 +50,10 @@
     <section id="advisor" class="tab-panel" role="tabpanel" aria-labelledby="tab-advisor" tabindex="0" hidden>
       <div class="section-heading"><div><h2 id="advisor-title" data-i18n>Portfolio Advisor</h2></div><span class="badge" data-i18n>Local demo only</span></div>
       {#include partials/advisor /}
+    </section>
+    <section id="setup" class="tab-panel" role="tabpanel" aria-labelledby="tab-setup" tabindex="0" hidden>
+      <div class="section-heading"><h2 data-i18n>Developer setup</h2><span class="badge" data-i18n>Local demo only</span></div>
+      {#include partials/setup /}
     </section>
   </main>
   <footer class="wrap"><span data-i18n>Built with Quarkus</span>        <div class="tags app-technologies" aria-label="Application technologies"><span>JAVA 21</span><span>QUARKUS</span><span>LANGCHAIN4J</span><span>GEMINI</span><span>GROQ</span><span>PGVECTOR</span></div></footer>
