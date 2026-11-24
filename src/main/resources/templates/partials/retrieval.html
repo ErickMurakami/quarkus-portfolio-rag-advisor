@@ -1,27 +1,34 @@
-<div class="workbench">
-<div class="scroll-panel controls" tabindex="0" aria-label="Retrieval controls">
-<div class="card">
-  <form id="retrieval-form">
-    <label for="retrieval-question" data-i18n>What evidence are you looking for?</label>
-    <textarea id="retrieval-question" name="question" required data-i18n-placeholder placeholder="How do these repositories use testing and database migrations?"></textarea>
-    <p class="note" data-i18n>Uses the selected developer ID. Searches indexed public documents only; no model-generated answer.</p>
-    <fieldset class="mode-picker">
-      <legend data-i18n>Retrieval mode</legend>
-      <label><input type="radio" name="mode" value="FOCUSED" checked> FOCUSED</label>
-      <label><input type="radio" name="mode" value="OVERVIEW"> OVERVIEW</label>
-    </fieldset>
-    <div class="actions"><button type="submit" value="search" data-i18n>Search Evidence</button><button type="submit" value="compare" class="secondary" data-i18n>Compare both modes</button></div>
-  </form>
-  <div class="mode-notes">
-    <p data-i18n>FOCUSED returns up to 8 chunks ranked by similarity, without a minimum similarity threshold.</p>
-    <p data-i18n>OVERVIEW returns up to 8 chunks, at most 2 per source, with cosine similarity ≥ 0.65.</p>
-    <p class="note" data-i18n>Cosine similarity is a ranking measure, not a percentage of certainty. Compare modes with the same question and developer.</p>
+<div class="workbench card-workbench">
+  <div class="scroll-panel controls" tabindex="0" aria-label="Retrieval controls">
+    <form id="retrieval-form" class="card-stack">
+      <section class="workspace-card">
+        <label for="retrieval-question" data-i18n>What evidence are you looking for?</label>
+        <textarea id="retrieval-question" name="question" required aria-describedby="retrieval-help" data-i18n-placeholder placeholder="How do these repositories use testing and database migrations?"></textarea>
+        <p id="retrieval-help" class="note" data-i18n>Uses the selected developer ID. Searches indexed public documents only; no model-generated answer.</p>
+      </section>
+      <section class="workspace-card">
+        <fieldset class="mode-picker">
+          <legend data-i18n>Retrieval mode</legend>
+          <label><input type="radio" name="mode" value="FOCUSED" checked> FOCUSED</label>
+          <label><input type="radio" name="mode" value="OVERVIEW"> OVERVIEW</label>
+        </fieldset>
+        <div class="mode-notes">
+          <p data-i18n>FOCUSED returns up to 8 chunks ranked by similarity, without a minimum similarity threshold.</p>
+          <p data-i18n>OVERVIEW returns up to 8 chunks, at most 2 per source, with cosine similarity ≥ 0.65.</p>
+          <p class="note" data-i18n>Cosine similarity is a ranking measure, not a percentage of certainty. Compare modes with the same question and developer.</p>
+        </div>
+      </section>
+      <div class="workspace-card actions">
+        <button type="submit" value="search" data-i18n>Search Evidence</button>
+        <button type="submit" value="compare" class="secondary" data-i18n>Compare both modes</button>
+      </div>
+    </form>
   </div>
-</div>
-</div>
-<div class="scroll-panel output" tabindex="0" aria-label="Retrieval results">
-<p id="retrieval-status" role="status" aria-live="polite" data-i18n>Ask a question to inspect public evidence.</p>
-<div id="retrieval-results" aria-busy="false"></div>
-
-</div>
+  <div class="scroll-panel output" tabindex="0" aria-label="Retrieval results">
+    <section class="workspace-card workspace-state">
+      <h3 data-i18n>Evidence search</h3>
+      <p id="retrieval-status" role="status" aria-live="polite" data-i18n>Ask a question to inspect public evidence.</p>
+    </section>
+    <div id="retrieval-results" aria-busy="false"></div>
+  </div>
 </div>

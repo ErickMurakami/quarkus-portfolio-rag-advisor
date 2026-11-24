@@ -1,40 +1,58 @@
 {#if localAdvisor}
-<div id="setup-root" class="workbench" data-categories="{skillCategories}">
+<div id="setup-root" class="workbench card-workbench" data-categories="{skillCategories}">
   <div class="scroll-panel controls" tabindex="0" aria-label="Setup form">
-    <p class="note" data-i18n>Create a local profile and index public repositories. Private repositories are never requested by this flow.</p>
-    <form id="setup-form">
+    <section class="workspace-card setup-intro">
+      <p class="note" data-i18n>Create a local profile and index public repositories. Private repositories are never requested by this flow.</p>
+    </section>
+    <form id="setup-form" class="card-stack">
       <fieldset id="setup-profile-fields" class="setup-fields">
-        <label for="setup-name" data-i18n>Full name</label>
-        <input id="setup-name" name="fullName" maxlength="60" autocomplete="name">
-        <label for="setup-username" data-i18n>GitHub username</label>
-        <input id="setup-username" name="githubUsername" maxlength="30" required autocomplete="off" pattern="[A-Za-z0-9][A-Za-z0-9-]*">
-        <label for="setup-mode" data-i18n>Profile source</label>
-        <select id="setup-mode"><option value="manual" data-i18n>Enter skills manually</option><option value="pdf" data-i18n>Import PDF resume</option></select>
-        <div id="setup-pdf-fields" hidden>
-          <label for="setup-file" data-i18n>PDF resume (up to 4 MiB)</label>
-          <input id="setup-file" name="file" type="file" accept="application/pdf,.pdf">
-          <p class="notice" data-i18n>The PDF is temporary. Extracted text is sent to the configured AI provider. Review the returned name and skills before saving. Use only a resume you are authorized to process.</p>
-          <button id="setup-import" type="button" class="secondary" data-i18n>Extract for review</button>
-        </div>
-        <h3 class="setup-review-heading" data-i18n>Review declared skills</h3>
-        <p class="note" data-i18n>Edit names and categories, remove incorrect entries or add missing skills. Nothing is saved by importing a PDF.</p>
-        <div id="setup-skills"></div>
-        <button id="setup-add-skill" type="button" class="secondary" data-i18n>Add skill</button>
+        <section class="workspace-card">
+          <h3 data-i18n>Developer identity</h3>
+          <label for="setup-name" data-i18n>Full name</label>
+          <input id="setup-name" name="fullName" maxlength="60" autocomplete="name">
+          <label for="setup-username" data-i18n>GitHub username</label>
+          <input id="setup-username" name="githubUsername" maxlength="30" required autocomplete="off" pattern="[A-Za-z0-9][A-Za-z0-9-]*">
+        </section>
+        <section class="workspace-card">
+          <label for="setup-mode" data-i18n>Profile source</label>
+          <select id="setup-mode"><option value="manual" data-i18n>Enter skills manually</option><option value="pdf" data-i18n>Import PDF resume</option></select>
+          <div id="setup-pdf-fields" hidden>
+            <label for="setup-file" data-i18n>PDF resume (up to 4 MiB)</label>
+            <input id="setup-file" name="file" type="file" accept="application/pdf,.pdf">
+            <p class="notice" data-i18n>The PDF is temporary. Extracted text is sent to the configured AI provider. Review the returned name and skills before saving. Use only a resume you are authorized to process.</p>
+            <button id="setup-import" type="button" class="secondary" data-i18n>Extract for review</button>
+          </div>
+        </section>
+        <section class="workspace-card">
+          <h3 class="setup-review-heading" data-i18n>Review declared skills</h3>
+          <p class="note" data-i18n>Edit names and categories, remove incorrect entries or add missing skills. Nothing is saved by importing a PDF.</p>
+          <div id="setup-skills"></div>
+          <button id="setup-add-skill" type="button" class="secondary" data-i18n>Add skill</button>
+        </section>
       </fieldset>
-      <button id="setup-save" type="submit" data-i18n>Save profile and index public repositories</button>
+      <div class="workspace-card setup-submit">
+        <button id="setup-save" type="submit" data-i18n>Save profile and index public repositories</button>
+      </div>
     </form>
-    <p id="setup-status" role="status" aria-live="polite" data-i18n>Choose manual entry or PDF import to begin.</p>
+    <section class="workspace-card workspace-state">
+      <h3 data-i18n>Profile status</h3>
+      <p id="setup-status" role="status" aria-live="polite" data-i18n>Choose manual entry or PDF import to begin.</p>
+    </section>
   </div>
   <div class="scroll-panel output" tabindex="0" aria-label="Ingestion progress">
-    <h3 data-i18n>Public repository ingestion</h3>
-    <p id="setup-job-status" role="status" aria-live="polite" data-i18n>No ingestion job has been started.</p>
-    <div id="setup-job"></div>
-    <div class="actions">
-      <button id="setup-start-job" type="button" class="secondary" hidden data-i18n>Start public ingestion</button>
-      <button id="setup-check-job" type="button" class="secondary" hidden data-i18n>Check progress</button>
-    </div>
+    <section class="workspace-card">
+      <h3 data-i18n>Public repository ingestion</h3>
+      <p id="setup-job-status" role="status" aria-live="polite" data-i18n>No ingestion job has been started.</p>
+      <div id="setup-job"></div>
+      <div class="actions">
+        <button id="setup-start-job" type="button" class="secondary" hidden data-i18n>Start public ingestion</button>
+        <button id="setup-check-job" type="button" class="secondary" hidden data-i18n>Check progress</button>
+      </div>
+    </section>
   </div>
 </div>
 {#else}
-<p class="notice" data-i18n>Setup is available only on the local development server. Uploads, profile creation and ingestion are not exposed as public operations.</p>
+<div class="workspace-card">
+  <p class="notice" data-i18n>Setup is available only on the local development server. Uploads, profile creation and ingestion are not exposed as public operations.</p>
+</div>
 {/if}

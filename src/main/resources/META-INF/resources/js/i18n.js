@@ -92,6 +92,8 @@ Object.assign(portuguese, {
   'Analyzing evidence': 'Analisando evidências', 'Analysis ready': 'Análise disponível',
   'No analysis available': 'Nenhuma análise disponível', 'Analysis could not complete': 'Não foi possível concluir a análise',
   'Analysis progress': 'Progresso da análise', 'Recommendations': 'Recomendações',
+  'Developer identity': 'Identificação do desenvolvedor', 'Profile status': 'Estado do perfil',
+  'Evidence search': 'Busca de evidências',
   'Setup': 'Configuração', 'Developer setup': 'Configuração do desenvolvedor',
   'Setup form': 'Formulário de configuração', 'Ingestion progress': 'Progresso da ingestão',
   'Create a local profile and index public repositories. Private repositories are never requested by this flow.': 'Cadastre um perfil local e indexe os repositórios públicos. Este fluxo nunca solicita repositórios privados.',

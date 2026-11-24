@@ -159,12 +159,15 @@ async function loadProfile() {
     identity.append(username);
     result.append(identity, uiElement('h3', 'Technical stack', 'stack-heading'));
     const skills = list(profile.skills).filter(Boolean);
+    const skillCards = element('div', null, 'skill-cards');
+    result.append(skillCards);
     for (const [category, label] of Object.entries(skillCategories)) {
       const names = skills.filter(skill => skill.category === category).map(skill => skill.name);
       if (names.length) {
-        const group = element('section', null, 'skill-group');
+        const group = element('section', null, 'skill-group workspace-card profile-skill-card'
+          + (category === 'TOOL' && names.length >= 4 ? ' skill-group--wide' : ''));
         group.append(uiElement('h4', label), technologyTags(names));
-        result.append(group);
+        skillCards.append(group);
       }
     }
     status('profile-status', skills.length ? 'Declared base stack · not verified by repository evidence' : 'No technical skills have been declared.');
@@ -334,7 +337,7 @@ function renderEvidence(panel, chunks, mode) {
   const repositories = new Set(chunks.map(chunk => chunk.sourceReference));
   panel.append(uiElement('p', `${chunks.length} chunks · ${repositories.size} distinct repositories`, 'note'));
   chunks.forEach(chunk => {
-    const card = element('article', null, 'result-entry');
+    const card = element('article', null, 'result-entry workspace-card');
     const heading = element('h3');
     heading.append(sourceLink(chunk.repo, chunk.sourceReference));
     card.append(heading, uiElement('span', similarity(chunk.similarity), 'similarity'));
