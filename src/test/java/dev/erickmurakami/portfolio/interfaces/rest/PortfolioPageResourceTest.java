@@ -35,6 +35,11 @@ class PortfolioPageResourceTest {
         assertTrue(html.contains("id=\"advisor-result\" aria-busy=\"false\"></div>"));
         assertFalse(html.contains("Advisor is unavailable in this environment"));
         assertFalse(html.contains("Private Repository 1"));
+        assertTrue(html.contains("id=\"advisor-state\""));
+        assertTrue(html.contains("class=\"advisor-card advisor-question-card\""));
+        assertTrue(html.contains("aria-describedby=\"advisor-help\""));
+        assertTrue(html.contains("id=\"advisor-suggestions-title\""));
+        assertTrue(html.contains("id=\"advisor-progress\""));
     }
 
     @Test

@@ -43,7 +43,7 @@ class Node {
 }
 function environment({ local = true, language = 'en', url = 'http://localhost/', fetch = async () => ({ ok: true, json: async () => ({}) }) } = {}) {
   const nodes = new Map();
-  for (const file of ['index.html', 'partials/advisor.html', 'partials/retrieval.html', 'partials/setup.html']) {
+  for (const file of ['index.html', 'partials/advisor.html', 'partials/advisor-form.html', 'partials/advisor-notice.html', 'partials/retrieval.html', 'partials/setup.html']) {
     const html = readFileSync(path.join(root, 'templates', file), 'utf8');
     for (const match of html.matchAll(/id="([^"]+)"/g)) nodes.set(match[1], new Node());
   }
@@ -483,4 +483,41 @@ test('waiting-for-rate-limit is reported from the job without re-posting ingesti
   assert.match(env.get('setup-job').textContent, /WAITING_RATE_LIMIT/);
   assert.match(env.get('setup-job').textContent, /2026-11-24T12:00:00Z/);
   assert.equal(env.calls.filter(([url]) => url.endsWith('/public')).length, 1);
+});
+
+test('analysis cards expose loading, changed and complete states without losing the question', async () => {
+  const pending = deferred();
+  const env = environment({ fetch: () => pending.promise });
+  selectDeveloper(env); env.get('advisor-question').value = 'Retained question';
+  const waiting = submit(env, 'advisor-form');
+  assert.equal(env.get('advisor-state').dataset.state, 'loading');
+  assert.equal(env.get('advisor-state-title').textContent, 'Analyzing evidence');
+  assert.equal(env.get('advisor-progress').hidden, false);
+  pending.resolve(response({ answer: 'Synthetic answer', strengths: ['Java'], tips: [], sources: [] }));
+  await waiting;
+  assert.equal(env.get('advisor-state').dataset.state, 'complete');
+  assert.equal(env.get('advisor-progress').hidden, true);
+  assert.equal(env.get('advisor-result').children.length, 4);
+  assert.ok(env.get('advisor-result').children.every(node => node.className.includes('advisor-card')));
+  assert.match(env.get('advisor-result').children[2].textContent, /Recommendations.*No recommendations/);
+  await env.get('language-toggle').emit('click');
+  assert.equal(env.get('advisor-state-title').textContent, 'Análise disponível');
+  assert.equal(env.get('advisor-question').value, 'Retained question');
+  assert.equal(env.calls.length, 1);
+  selectDeveloper(env, '8'); await env.get('developer-id').emit('input');
+  assert.equal(env.get('advisor-state').dataset.state, 'changed');
+  assert.equal(env.get('advisor-result').children.length, 0);
+  assert.equal(env.get('advisor-question').value, 'Retained question');
+});
+
+test('analysis has distinct empty and error cards and hides the loading indicator', async () => {
+  for (const [result, state] of [[response({ answer: '' }), 'empty'], [{ ok: false, status: 500 }, 'error']]) {
+    const env = environment({ fetch: async () => result }); selectDeveloper(env);
+    env.get('advisor-question').value = 'Synthetic question';
+    await submit(env, 'advisor-form');
+    assert.equal(env.get('advisor-state').dataset.state, state);
+    assert.equal(env.get('advisor-progress').hidden, true);
+    assert.equal(env.get('advisor-result').children.length, 0);
+    assert.equal(env.get('advisor-form').querySelector('[type="submit"]').disabled, false);
+  }
 });

@@ -269,3 +269,31 @@ silently discard the root design tokens.
 ![Advisor with a synthetic answer](docs/images/advisor-analysis-pt.png)
 
 ![Profile in dark theme](docs/images/profile-dark-pt.png)
+
+
+## Analysis workspace
+
+The Portfolio Advisor keeps its two desktop columns, with separate cards for the
+local-data notice, question, suggestions and primary action. The result column has
+an explicit status card and content-sized cards for the answer, strengths,
+recommendations and sources. Loading uses an indeterminate progress indicator;
+no confidence scores or completion percentage are invented. On small screens,
+the cards stack and allow document scrolling.
+
+The analysis scrollers reserve room around focused elements. The browser QA checks
+all four computed border widths/styles in normal, hover and keyboard-focus states,
+and verifies that the complete focus outline fits inside both its card and scroll
+panel. It checks the CTA is visible at 1440×900, no desktop document scrolling at
+1024×600, stable header bounds across tabs, and idle/changed/loading/complete/empty/
+error states. Questions and results persist across PT/EN and tab changes. All QA
+analysis content is synthetic and no AI provider is called.
+
+![Analysis ready to receive a question](docs/images/advisor-idle.png)
+
+![Analysis in progress](docs/images/advisor-loading.png)
+
+![Analysis cards in dark theme](docs/images/advisor-analysis-dark-pt.png)
+
+![Status after changing the developer](docs/images/advisor-empty.png)
+
+<img src="docs/images/advisor-mobile.png" alt="Analysis cards on a small screen, with a complete textarea focus border" width="390">
