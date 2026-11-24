@@ -1,311 +1,295 @@
-# quarkus-portfolio-rag-advisor
+# Portfolio RAG Advisor
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+A Java proof of concept that uses Retrieval-Augmented Generation (RAG) to analyse a developer's portfolio from evidence retrieved from GitHub READMEs. It combines semantic search with AI-generated strengths and prioritised recommendations, with references to the documents used.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+A declared technology stack does not, by itself, demonstrate practical experience. This project keeps declared skills separate from repository evidence and helps examine what the documentation actually supports. It does **not** audit the entire source code or certify a developer's competence.
 
-## Running the application in dev mode
+The application is intended for local use and technical demonstrations. Its current access restrictions are described under [Privacy and security](#privacy-and-security).
 
-You can run your application in dev mode that enables live coding using:
+## Features
 
-```shell script
-./mvnw quarkus:dev
+- Developer profiles with declared skills grouped by category.
+- PDF résumé extraction with editable review before saving, or manual skill entry.
+- Public GitHub README ingestion through asynchronous jobs, with progress and rate-limit retry states.
+- Semantic evidence search with `FOCUSED` and `OVERVIEW` retrieval modes.
+- Portfolio analysis with an answer, strengths, prioritised tips and backend-generated source references.
+- A Qute interface with four tabs, Portuguese and English labels, light and dark themes, and local technology logos.
+- Separate internal ingestion and analysis paths that can include private repositories; these require particular care with provider access and disclosure.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    Developer["Developer"] --> Setup["Quarkus: profile setup"]
+    PDF["PDF résumé"] --> Extract["PDFBox: extract text"]
+    Extract --> ResumeAI["Groq: extract declared skills"]
+    ResumeAI --> Review["User review"]
+    Review --> Setup
+    Setup --> Profiles[("PostgreSQL: profiles and skills")]
+    Setup --> Job["Quarkus: public ingestion job"]
+    GitHub["GitHub READMEs"] --> Job
+    Job --> Chunk["Chunk by heading and length"]
+    Chunk --> Documents["Gemini: document embeddings"]
+    Documents --> Vectors[("PostgreSQL + pgvector: chunks and vectors")]
+    Question["Developer question"] --> Query["Gemini: query embedding"]
+    Query --> Retrieval["Quarkus: cosine retrieval"]
+    Vectors --> Retrieval
+    Retrieval --> Context["Question and retrieved evidence"]
+    Context --> Groq["Groq: portfolio analysis"]
+    Groq --> Response["Advisor response"]
+    Retrieval --> Sources["Backend: deduplicate and scope sources"]
+    Sources --> Response
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+All of these paths run within one Quarkus application, apart from PostgreSQL and external API providers. PDF import produces a profile draft; it does **not** add the résumé to the vector index. The implemented evidence ingestion path indexes GitHub READMEs.
 
-## Packaging and running the application
+READMEs are split at Markdown headings and into sections of up to 2,000 characters, with a 200-character overlap when splitting long sections. Ingestion creates document embeddings using Gemini `gemini-embedding-001`, with 1,024 dimensions and the `RETRIEVAL_DOCUMENT` task type. Questions use the same model and dimensions with `RETRIEVAL_QUERY`.
 
-The application can be packaged using:
+Storing embeddings allows subsequent questions to search existing documents without embedding every README again. PostgreSQL stores the text, source reference, developer ID, access scope and vector together. pgvector's cosine-distance operator ranks candidates within the requested developer's evidence.
 
-```shell script
-./mvnw package
+RAG supplies selected documents as context rather than asking the generation model to recall a portfolio from memory. The Advisor sends the question and retrieved chunk text to the configured Groq-compatible chat model. The backend parses its JSON response and builds `sources` from the retrieved evidence, deduplicating source references and filtering `relatedRepos` against permitted repository names or aliases. The model does not generate the source list. These checks do not establish that every statement in the answer is correct.
+
+The [application services](src/main/java/dev/erickmurakami/portfolio/application/services), [REST resources](src/main/java/dev/erickmurakami/portfolio/interfaces/rest) and [Flyway migrations](src/main/resources/db/migration) contain the corresponding implementation.
+
+## Technology stack
+
+| Area | Implementation |
+| --- | --- |
+| Runtime | Java 21, Quarkus 3.40.1.2, Maven Wrapper |
+| Web and API | Quarkus REST, Jackson, Bean Validation, SmallRye OpenAPI |
+| Interface | Qute, custom CSS, vanilla JavaScript; no frontend build pipeline |
+| AI integration | LangChain4j, Gemini embeddings, Groq-compatible OpenAI chat API |
+| Persistence | PostgreSQL 17 with pgvector, Hibernate ORM/Panache, JDBC vector queries, Flyway |
+| PDF processing | Apache PDFBox |
+| Background work | Quarkus Scheduler and persisted ingestion jobs |
+| Containers | Docker Compose; a compatible Podman setup can also provide containers |
+| Tests | JUnit 5, Mockito, REST Assured, Testcontainers, Node.js test runner; optional Firefox browser QA |
+
+Versions and dependencies are defined in [pom.xml](pom.xml). Container services are defined in [compose.yml](compose.yml).
+
+## Retrieval strategies
+
+Both modes request **at most eight chunks**. Results are ordered by cosine similarity descending, then chunk ID for deterministic ties.
+
+| Mode | Selection | Trade-off |
+| --- | --- | --- |
+| `FOCUSED` | Nearest chunks, with no similarity cutoff or per-source cap | Emphasises the question's topic, but one repository can dominate and weak matches can still appear. |
+| `OVERVIEW` | At most two chunks per `source_reference`, each with similarity **at least 0.65**, followed by the overall limit | Encourages source diversity, but can return fewer chunks and omit useful context. |
+
+The `0.65` cutoff is currently hard-coded in [DocumentChunkRepository](src/main/java/dev/erickmurakami/portfolio/infrastructure/repository/DocumentChunkRepository.java), rather than exposed as an environment setting. It is not a calibrated quality guarantee.
+
+The Explorer applies `PUBLIC` scope before ranking and limiting. The internal Advisor uses `FOCUSED` retrieval and can include both public and private chunks for the selected developer. Queries filter by developer ID, but that filter is not an authorisation mechanism.
+
+Similarity is calculated as `1 - cosine distance`. It measures vector proximity, **not** confidence, factual accuracy or a probability that the analysis is correct.
+
+## Getting started
+
+### Prerequisites
+
+- JDK 21.
+- Docker with Compose, or a compatible Podman/Compose environment.
+- Gemini and Groq API credentials for actual embedding, extraction and analysis requests.
+- Internet access to obtain dependencies and container images and to call the providers and GitHub.
+- Node.js 22 or later only if running the JavaScript checks.
+
+### Configure the environment
+
+From the repository root:
+
+```sh
+cp .env.example .env
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+Edit `.env` locally. Use your own AI credentials and keep this file out of version control. Quarkus development mode reads the root `.env` file.
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+| Variable | Purpose |
+| --- | --- |
+| `GEMINI_API_KEY` | Required non-empty value at startup; a valid Gemini key is needed for document and query embeddings. |
+| `AI_API_KEY` | Groq-compatible provider key for résumé extraction and Advisor generation. |
+| `AI_BASE_URL` | Set to `https://api.groq.com/openai/v1/` when using Groq. |
+| `AI_CHAT_MODEL` | Chat model read by the application; defaults to `openai/gpt-oss-20b`. |
+| `GITHUB_TOKEN` | Required non-empty value at startup. Public Setup does not send it to GitHub; use a placeholder such as `unused-public-only` for that flow. A valid authorised token is needed for the internal authenticated GitHub paths. |
+| `DB_URL` | Optional; defaults to `jdbc:postgresql://localhost:5432/portfolio_rag_advisor`. |
+| `DB_USERNAME` / `DB_PASSWORD` | Optional; both default to `postgres` for the local database. |
 
-If you want to build an _über-jar_, execute the following command:
+The existing `.env.example` uses `AI_MODEL`; the application actually reads **`AI_CHAT_MODEL`**. Rename that entry if choosing a model explicitly. Set `AI_BASE_URL` explicitly as above: the fallback in `application.properties` differs from the Groq URL in the example.
 
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
+Empty Gemini or GitHub values fail required configuration injection. A non-empty placeholder satisfies startup only; it does not grant access to a provider. There are no browser-side API keys.
+
+### Start PostgreSQL and Quarkus
+
+```sh
+docker compose up -d postgres
+./mvnw quarkus:dev -Dquarkus.http.host=127.0.0.1
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+Compose starts `pgvector/pgvector:pg17`, bound to loopback port `5432`, with a named volume for persistence. Flyway applies the schema and enables the `vector` extension when Quarkus starts. If changing `DB_PASSWORD`, use the same value for Compose and Quarkus; changing it does not reset credentials in an existing database volume.
 
-## Creating a native executable
+Open the application at [http://127.0.0.1:8000/](http://127.0.0.1:8000/). Swagger UI is available at [http://127.0.0.1:8000/q/swagger-ui/](http://127.0.0.1:8000/q/swagger-ui/).
 
-You can create a native executable using:
+Use the database-only Compose command above for the interactive demo. The optional `full` Compose profile currently forwards to container port `8080`, while the application configures `8000`, and passes `AI_MODEL` rather than `AI_CHAT_MODEL`. In addition, packaged launches reject all `/api/v1/` operations. The full profile is therefore not a supported replacement for this development-mode workflow in its current form.
 
-```shell script
-./mvnw package -Dnative
+Stop the local database with `docker compose stop postgres` when finished; its data remains in the volume.
+
+## Using the application
+
+1. Open **Setup / Configuração** and enter a full name and GitHub username.
+2. Choose manual entry or PDF import. Manual skills use the actual categories: `LANGUAGE`, `FRAMEWORK`, `DATABASE`, `ARCHITECTURE`, `TOOL` and `OTHER`.
+3. For a PDF, review the extracted name and skills. Correct, add or remove entries before saving. Import returns a draft and does not create a developer automatically.
+4. Save the profile. The returned `developerId` becomes the shared selection and updates the URL to `?developerId={id}`.
+5. Setup starts a public-only ingestion job. GitHub repository discovery and README reads in this path do not use the server's personal token.
+6. Follow the real job state: `PENDING`, `RUNNING`, `WAITING_RATE_LIMIT`, `COMPLETED` or `FAILED`. The UI shows repository counters, chunks, current repository and the next retry time when supplied. It polls the job rather than resubmitting it while waiting.
+7. Once ingestion completes, open **Retrieval Explorer**, ask a question and choose a mode, or compare both modes with the same question.
+8. Open **Portfolio Advisor** for an evidence-based answer and recommendations. Ask in Portuguese for a Portuguese answer, or English for English. Changing the UI language does not translate an existing answer.
+
+A saved profile remains saved if ingestion fails. Setup can retry ingestion without creating it again. The job response contains counters and state but no detailed error-message field; the UI cannot display a provider failure reason that the API has not supplied.
+
+For example, a local Explorer request is:
+
+```sh
+curl -X POST 'http://127.0.0.1:8000/api/v1/developers/1/retrieval?mode=OVERVIEW' \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"What evidence describes database design?"}'
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+Replace `1` with a profile you have created and ingested. An empty evidence set returns no chunks. The Advisor also handles no evidence without calling the generation model.
 
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
+## Web interface
+
+The same Quarkus application serves Qute HTML, CSS, JavaScript and REST endpoints. There is no separate frontend server or framework.
+
+- **Profile:** developer identity and declared skills grouped into technical stack cards. These are not verified repository evidence.
+- **Retrieval Explorer:** retrieved text, repository references and cosine similarity; independent results for mode comparison.
+- **Portfolio Advisor:** question form, analysis state, answer, strengths, prioritised tips and sources. Private sources have aliases and no source URL.
+- **Setup:** manual or PDF-assisted profile creation, review and public ingestion progress.
+
+An existing profile can be selected with `http://127.0.0.1:8000/?developerId=1`. Changing the selection refreshes the profile and clears evidence and analysis belonging to the previous developer. Username lookup through `?github=` is not implemented.
+
+Tab switches preserve form inputs and results in shared in-memory state. Portuguese is the default interface language; language and theme preferences persist locally. Switching language does not fetch data again, reset the selected developer or translate API content. A reload requires API results to be loaded again.
+
+Desktop panels scroll internally within a single-screen workspace; smaller screens allow page scrolling for readability. Technology logos are local assets with text fallbacks; their sources and licences are recorded in [the logo notice](src/main/resources/META-INF/resources/logos/NOTICE.txt). Fonts can load from Google Fonts, with system fallbacks when unavailable.
+
+## Screenshots
+
+These are captures of the real Qute interface using **synthetic QA profiles, evidence, job progress and model responses**. They demonstrate presentation and interaction states, not live GitHub or AI-provider results.
+
+### Developer profile
+
+![Profile with declared skills, using synthetic QA data](docs/images/profile-pt.png)
+
+### Retrieval Explorer
+
+![Retrieval mode comparison with synthetic evidence](docs/images/retrieval-en.png)
+
+### Portfolio Advisor
+
+![Structured Advisor result with a synthetic model response](docs/images/advisor-analysis-pt.png)
+
+### Setup and résumé review
+
+![Review of a synthetic extracted profile before saving](docs/images/setup-review-pt.png)
+
+## API reference
+
+All paths below have the prefix `/api/v1`. **Every operation is restricted to the local development boundary**, including read-only operations. “Public-only” describes the repositories accessed, not anonymous access to a hosted API. JSON is used except for the multipart import.
+
+| Method | Path after `/api/v1` | Purpose and content scope |
+| --- | --- | --- |
+| `POST` | `/developers` | Save a profile and declared skills; returns its ID. |
+| `GET` | `/developers/{id}` | Read a profile and declared skills. |
+| `POST` | `/resumes/import` | Extract a draft; multipart fields `file` and `githubUsername`. |
+| `POST` | `/ingestion-jobs/developers/{devId}/public` | Start public-only ingestion; returns HTTP 202 and job location. Used by Setup. |
+| `GET` | `/ingestion-jobs/{jobId}` | Read job state and progress. |
+| `POST` | `/developers/{devId}/retrieval?mode=FOCUSED` | Public-only chunks; accepts `FOCUSED` (default) or `OVERVIEW`. Body: `{"question":"..."}`. |
+| `POST` | `/developers/{devId}/advisor` | Internal analysis; can retrieve private evidence. Body: `{"question":"..."}`. |
+| `POST` | `/developers/{devId}/repositories/{owner}/{repository}/ingest` | Synchronously ingest one public repository. |
+| `POST` | `/ingestion-jobs/developers/{devId}` | Legacy private-inclusive job; uses authenticated GitHub access. Not used by Setup. |
+| `POST` | `/developers/{devId}/repositories/ingest` | Legacy synchronous private-inclusive ingestion. |
+| `GET` | `/github/{username}/repositories` | Public repository discovery. |
+| `GET` | `/github/{owner}/{repository}/readme` | Public README read. |
+| `GET` | `/github/me/repositories` | Repository discovery using the server's personal token. |
+| `GET` | `/github/me/{owner}/{repository}/readme` | README read using the server's personal token. |
+
+See [REST resources](src/main/java/dev/erickmurakami/portfolio/interfaces/rest) and [DTOs](src/main/java/dev/erickmurakami/portfolio/application/dto) for exact contracts. `IngestionJobResponse` exposes `jobId`, `devId`, `status`, `totalRepositories`, `processedRepositories`, `skippedRepositories`, `failedRepositories`, `totalChunks`, `currentRepository` and `nextAttemptAt`.
+
+## Privacy and security
+
+**This application is not ready for unrestricted public hosting.** It has no user authentication, ownership authorisation or tenant isolation. A developer ID or job UUID is not an access credential.
+
+[LocalApiFilter](src/main/java/dev/erickmurakami/portfolio/interfaces/rest/LocalApiFilter.java) permits `/api/v1/` only in Quarkus development mode, from loopback clients, with same-origin checks for browser requests. Cross-site browser requests are rejected. Outside development mode, these APIs return HTTP 403, although the static interface can still render. This boundary is a local demo restriction, not authentication. Do not expose development mode through a public listener, tunnel, proxy or port forward; a loopback proxy does not identify or authorise its users.
+
+Setup explicitly creates jobs with `includePrivate=false`. Public discovery and reads avoid authenticated access. Internal paths retain private-inclusive behaviour and can access repositories available to the server's token. Their token-owner check is not authentication of the person calling the application. The Advisor can retrieve private chunks already indexed under any selected developer ID within the local application.
+
+Private sources are labelled `Private Repository 1`, `Private Repository 2`, and so on, with no URL in `sources`. **Aliases do not guarantee confidentiality.** Original chunk text is still sent to the generation provider and can contain names, URLs, client information and internal identifiers. Prompt instructions ask the model not to disclose these, but generated answers, strengths and tips are not sanitised to enforce that rule. Existing tests demonstrate this limitation.
+
+Data sent outside the application includes:
+
+- README chunk text and questions sent to Gemini for embeddings, including private documents when using internal ingestion.
+- Questions and retrieved evidence sent to the configured Groq-compatible provider for analysis.
+- Extracted résumé text sent to that provider for profile extraction.
+
+PDF uploads are limited to 4 MiB, within the 5 MB HTTP body limit, with at most 100 pages and 100,000 extracted characters. The application deletes the temporary upload in a `finally` block after processing or failure and does not create a permanent PDF copy. These limits do not anonymise the text or control the provider's retention policy. Use only documents you are authorised to process and send.
+
+Keep credentials on the server and out of logs, screenshots and shared recordings. Indexed text and profiles persist in PostgreSQL. Browser API results are held in memory rather than local storage; this is not a security boundary. Before public access, implement real authentication, resource-level authorisation, data isolation, upload and ingestion abuse controls, and API rate and cost limits. Provider quotas and the current upload limits are insufficient on their own.
+
+## Testing
+
+Run the Java verification suite with JDK 21:
+
+```sh
+./mvnw clean verify
 ```
 
-You can then execute your native executable with: `./target/quarkus-portfolio-rag-advisor-0.0.1-runner`
+Unit tests use JUnit 5 and Mockito for retrieval, analysis, ingestion, résumé extraction and related service behaviour. Qute/HTTP checks use Quarkus and REST Assured with non-empty synthetic configuration values; their profile disables database work and background ingestion. These tests do not need real provider credentials.
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+`DocumentChunkRepositoryTest` starts a disposable `pgvector/pgvector:pg17` database through Testcontainers and applies the production migrations. It exercises the real SQL, including ranking, the overview cutoff and source cap, public-scope filtering, deterministic ties and developer filtering, using isolated synthetic fixtures. A Docker-compatible runtime must be available. When it is unavailable, these tests are **skipped**, not evidence that vector integration passed; inspect the test summary and `target/surefire-reports`.
 
-## Related Guides
+The default Maven configuration skips Failsafe `*IT` tests. In particular, `GeminiEmbeddingIT` calls the real provider and is separate from the mock-based default verification. Do not enable it for an offline or credential-free run.
 
-- Qute ([guide](https://quarkus.io/guides/qute)): Offer templating support for web, email, etc in a build time, type-safe way
-- REST ([guide](https://quarkus.io/guides/rest)): Build RESTful web services and APIs using Jakarta REST (formerly JAX-RS)
-- REST Jackson ([guide](https://quarkus.io/guides/rest#json-serialisation)): Jackson serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it
-- JDBC Driver - PostgreSQL ([guide](https://quarkus.io/guides/datasource)): Connect to the PostgreSQL database via JDBC
+Run the dependency-free JavaScript interaction tests separately with Node.js 22+:
 
-## Provided Code
+```sh
+node --test --experimental-test-isolation=none src/test/js/app.test.cjs
+```
 
-### REST
+These use a DOM double and synthetic responses to check state, requests, language changes, rendering and Setup. They do not validate browser layout or live AI integrations.
 
-Easily start your REST Web Services
+Optional browser QA is in [browser-qa.cjs](src/test/js/browser-qa.cjs). With the development server running, start an isolated Firefox session and run:
 
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+```sh
+mkdir -p /tmp/rag-qa-firefox
+firefox --headless --no-remote --profile /tmp/rag-qa-firefox \
+  --remote-debugging-port 19224 about:blank
+```
 
-## Portfolio web interface
+In another terminal:
 
-Open <http://localhost:8000/> after starting Quarkus. The Qute page and its CSS/JavaScript
-are served by the same application; no frontend server or build is needed. Fonts use
-Google Fonts when available, with local system fallbacks. The page contains no initial
-profile or evidence data. Select an existing developer ID to fetch the declared base
-stack from `GET /api/v1/developers/{id}`. Declared skills are not verified GitHub evidence.
+```sh
+RAG_UI_URL=http://127.0.0.1:8000/ node src/test/js/browser-qa.cjs
+```
 
-### Local Advisor and privacy
+The script uses the Firefox debugging endpoint on port `19224`, intercepts API calls with synthetic responses, checks desktop/mobile layout, themes and language/state retention, and writes screenshots into `docs/images`. It does not establish end-to-end provider integration.
 
-The full Advisor form **and REST operation** are available only in the Quarkus `dev`
-launch mode. Outside that mode, `/api/v1/developers/{id}/advisor` returns HTTP 403
-before calling the analysis service. This is a demo restriction, not authentication.
-Run a local demonstration with `./mvnw quarkus:dev -Dquarkus.http.host=127.0.0.1`;
-do not expose dev mode through a public listener, tunnel, proxy or port forward.
+[GitHub Actions](.github/workflows/ci.yml) runs Maven verification on pushes and pull requests to `main`. It does not run the JavaScript commands above. A local successful build does not establish the result of a remote workflow run.
 
-The Advisor deliberately retains its internal retrieval behavior: evidence can include
-private repositories and is sent to the configured AI provider. Aliases and missing
-source URLs do **not** guarantee confidentiality. The generated answer, strengths and
-tip text can contain private names, URLs, client information or internal identifiers.
-Use only synthetic data or data you are authorized to send. Do not record or share a
-session containing private evidence. Proper authorization or data isolation is required
-before enabling a hosted Advisor. No credentials or AI calls are made directly by the
-browser; it calls the existing backend. Model text is displayed as plain text.
+## Design decisions and trade-offs
 
-### Public evidence explorer
+- **One Quarkus application:** REST, templates and background jobs share a runtime and database. This keeps the demonstration small, but ingestion and interactive requests share resources.
+- **Qute and vanilla JavaScript:** no separate frontend deployment or build pipeline; client state and localisation remain application code.
+- **PostgreSQL with pgvector:** evidence, metadata and vectors live together. Current migrations have developer/scope indexes but no approximate nearest-neighbour vector index; larger datasets need performance evaluation.
+- **Gemini embeddings and Groq generation:** document retrieval and answer generation use separate providers and credentials. This also introduces separate quotas, failure modes and data-processing considerations.
+- **Focused versus diversified retrieval:** the Explorer makes concentration and source coverage visible. Neither strategy guarantees complete evidence.
+- **README-based evidence:** documentation is easy to ingest and inspect, but a written claim is not proof that an implementation is correct or present. The Advisor does not currently receive the declared skill list as part of its prompt.
 
-`Search Evidence` uses `POST /api/v1/developers/{id}/retrieval?mode=FOCUSED|OVERVIEW`.
-`Compare both modes` sends the same developer ID and question to both modes and shows
-independent results or errors. FOCUSED has no similarity cutoff. OVERVIEW accepts at
-most two chunks per source with similarity at least 0.65. Both return at most eight
-chunks and use the backend's public-only filter. Cosine similarity is not confidence.
-The UI never reconstructs a source URL from a repository name or private alias.
-Profile requests use the existing GET endpoint; changing developer ID clears old
-analysis and evidence and reloads the declared skills automatically.
+## Limitations and future work
 
-### UI checks
+The following are improvements to evaluate, not existing capabilities:
 
-Run `./mvnw clean verify` for the Java suite, including real HTTP checks for the
-Qute page, CSS, JavaScript and HTTP 403 on the Advisor outside dev mode. The page
-test profile disables ORM, Flyway migrations, Dev Services and background ingestion;
-it does not query a real database or call AI providers.
+- Authentication, authorisation, ownership checks and data isolation for hosted use, plus explicit cost and abuse controls.
+- Deeper source-code evidence and a more systematic comparison of declared skills with implementation evidence.
+- Retrieval evaluation, threshold calibration, configurable selection limits and indexing strategies for larger datasets.
+- Answer-quality evaluation, stronger handling of untrusted document instructions and enforceable private-data disclosure controls.
+- Better job failure diagnostics in the API and broader retry handling across providers.
+- An optional MCP server integration. No MCP server is implemented in this project.
 
-Run `node --test --experimental-test-isolation=none src/test/js/app.test.cjs` with
-Node 22+ for dependency-free interaction tests with synthetic API responses. These
-exercise profile refresh/races, input validation, safe text and source rendering,
-loading/error/empty states, comparison and request cancellation. They use a DOM
-double and do not establish real browser layout or live Gemini/Groq integration.
-The pgvector repository tests require Docker and report skipped when unavailable.
-
-
-### Presentation workspace (PT / EN)
-
-The UI uses a single `100dvh` desktop workspace. The header, developer selector and
-four tabs remain visible. Controls and output scroll independently. Narrow screens
-allow document scrolling for readability. Tab switching retains
-form inputs, scroll positions and results without fetching again. Keyboard navigation
-supports Left/Right, Home and End; Tab moves into the selected content panel.
-
-Portuguese is the default UI language. The flag control follows the GitHub Pages pattern: the current language’s flag,
-with an accessible label and tooltip describing the switch. It changes interface labels,
-status messages and help text while retaining context. It never translates developer
-data, repository content or model-generated analysis. Ask the Advisor in Portuguese
-for a Portuguese answer (the existing model prompt follows the question's language).
-Only theme/language preferences are persisted; API responses are held in memory.
-
-Open `http://localhost:8000/?developerId=1` with an existing developer ID. Selection
-loads `GET /api/v1/developers/{id}` and is shared by all tabs. Editing the ID updates
-the URL, aborts old requests and clears results from the previous developer. Selection
-resolution is isolated in `selectionFromUrl`; `?github=` is reserved for a future
-supported lookup and currently makes no request. No username endpoint was added.
-
-The Qute HTTP test profile supplies non-empty **synthetic** Gemini/GitHub/Groq values
-to permit CDI startup without credentials. Production configuration is unchanged.
-The GitHub Actions fix must still be verified remotely after the next user push.
-
-
-## Telas de exemplo
-
-Capturas da interface Qute no Firefox. **Perfil e evidências das imagens são dados
-sintéticos de teste**, injetados apenas durante a captura; não são resultados reais
-nem dados fixos da aplicação. Não foram feitas chamadas a Gemini, Groq ou GitHub.
-
-### Perfil — português
-
-Cabeçalho compacto, seleção compartilhada e competências declaradas por categoria.
-A página desktop permanece dentro da viewport; o inventário usa altura natural e rola apenas quando necessário.
-
-![Perfil em português](docs/images/profile-pt.png)
-
-### Retrieval Explorer — English
-
-Comparação dos modos com a mesma pergunta. Os resultados são preservados entre abas.
-
-![Evidence comparison in English](docs/images/retrieval-en.png)
-
-### Advisor — restrição local
-
-Captura fora do modo de desenvolvimento: a análise permanece indisponível. O aviso
-não representa autenticação nem garantia de confidencialidade.
-
-![Advisor restrito à demonstração local](docs/images/advisor-local-only-pt.png)
-
-### Tela pequena
-
-A versão mobile prioriza legibilidade e permite rolagem quando necessário.
-
-<img src="docs/images/profile-mobile-pt.png" alt="Perfil em português na versão mobile" width="390">
-
-
-## Local developer setup
-
-Run `./mvnw quarkus:dev -Dquarkus.http.host=127.0.0.1`, then open
-<http://localhost:8000/> and select **Configuração / Setup**. Configure the existing
-Gemini and Groq credentials locally to perform actual extraction and embeddings;
-never put credentials in the browser. The setup flow does not use the server's
-GitHub token: repository discovery and README reads use the public GitHub API.
-
-1. Enter a name and GitHub username. Choose manual skills or PDF import.
-2. PDF import calls `POST /api/v1/resumes/import` with multipart `file` and
-   `githubUsername`. Review/correct the extracted name and skills. Import alone
-   never creates a developer. Manual entry uses the actual `SkillCategory` values
-   supplied by Qute from the Java enum, including `OTHER`.
-3. Save through `POST /api/v1/developers`. The returned ID updates the shared
-   selection and `?developerId=`. Only the reviewed profile is saved.
-4. The UI starts `POST /api/v1/ingestion-jobs/developers/{id}/public`, which always
-   creates the job with `includePrivate=false`. The legacy job endpoint retains
-   its private behavior and is never used by Setup.
-5. Poll `GET /api/v1/ingestion-jobs/{jobId}` for the real status, repository counts,
-   chunks, current repository and next retry time. `WAITING_RATE_LIMIT` does not
-   re-submit ingestion. Completion unlocks the new developer's other tabs.
-   Failure permits retrying ingestion without creating another profile.
-
-An already saved profile stays saved if starting ingestion fails. The current job
-DTO has no error-message field, so the UI shows `FAILED` and the provided counters
-with a generic local-configuration message. It does not invent failure details.
-
-### Processing limits and privacy boundary
-
-**All `/api/v1/` operations are local-demo operations**, including profile reads,
-uploads, retrieval, job status, `/github/me`, private ingestion and Advisor. A request
-filter rejects them outside Quarkus dev mode, rejects non-loopback clients in dev,
-and rejects cross-origin browser requests. The static Qute UI can render outside dev,
-but its operational APIs are unavailable. This is not user authentication, ownership
-verification or tenant isolation. A numeric developer ID is never an authorization
-credential. Do not expose dev mode through a proxy, tunnel or public listener;
-proxying from loopback does not establish user authorization. Public deployment
-needs real authorization, data isolation, rate/cost controls and an abuse review.
-
-Uploads are limited to 4 MiB (within the application's existing 5 MB HTTP body limit),
-100 PDF pages and 100,000 extracted characters before sending text to the configured
-AI provider. The upload is deleted in a `finally` block after extraction or failure;
-no permanent PDF copy is created by the application. Quarkus also manages temporary
-multipart files. Extracted text leaves the server for the configured Groq-compatible
-provider; it is not made anonymous merely by omitting the original PDF. In-memory UI
-state is not saved to browser storage; only language/theme preferences are persisted.
-The existing Advisor privacy limitation still applies to generated free text.
-
-### Logos, language and browser checks
-
-Technology labels retain the exact API skill names. The case-insensitive local
-allowlist is in `js/technology-logos.js`. Unknown names (including Mockito, IRIS and
-LangChain4j until a suitable transparent asset is selected) stay text-only. No profile skill is added
-because an icon exists. Only displayed logos are loaded. Devicon/Simple Icons
-licenses and official project mark sources are recorded in
-`src/main/resources/META-INF/resources/logos/NOTICE.txt` and adjacent license files.
-Where available, the exact transparent SVGs from the author’s GitHub Pages are
-used (Java, Spring, Quarkus, PostgreSQL, Redis, Docker, Groq, Flyway, Hibernate).
-Logos have no background tiles; monochrome marks adapt to the dark theme.
-
-The small language dictionary initializes locale/theme in the document head before
-styles paint. A body-end call translates labels before deferred application code;
-only untranslated labels are briefly withheld during parsing. Language switching
-runs synchronously and skips unchanged nodes, without toggling page visibility,
-recreating results or making API calls. Backend data and existing Advisor prose
-are never translated. The header's appearance is retained; Setup adds one requested
-navigation tab. CSS/JS asset URLs are versioned to avoid stale cached styles.
-
-`node --test --experimental-test-isolation=none src/test/js/app.test.cjs` covers
-profile, retrieval, Advisor, language retention and Setup with synthetic responses.
-For optional Firefox QA, start an isolated browser with
-`firefox --headless --no-remote --profile /tmp/rag-qa-firefox --remote-debugging-port 19224 about:blank`
-(create that profile directory first). Run `node src/test/js/browser-qa.cjs` against
-an already running local dev server. `RAG_UI_URL` (default
-`http://127.0.0.1:18400/`) and `RAG_BROWSER_WS` (default
-`ws://127.0.0.1:19224/session`) select the server and browser. The script intercepts
-all `/api` requests with synthetic fixtures, checks computed CSS rules, local logos,
-both themes, locale frame samples/reload persistence, form/result retention and the
-PDF-review/public-job flow. It writes example screenshots; it does not establish
-live Groq/Gemini integration. The CSS check catches malformed imports that can
-silently discard the root design tokens.
-
-### Setup examples (synthetic data)
-
-![Resume review before saving](docs/images/setup-review-pt.png)
-
-![Public ingestion progress](docs/images/setup-progress-pt.png)
-
-![Advisor with a synthetic answer](docs/images/advisor-analysis-pt.png)
-
-![Profile in dark theme](docs/images/profile-dark-pt.png)
-
-
-## Analysis workspace
-
-The Portfolio Advisor keeps its two desktop columns, with separate cards for the
-local-data notice, question, suggestions and primary action. The result column has
-an explicit status card and content-sized cards for the answer, strengths,
-recommendations and sources. Loading uses an indeterminate progress indicator;
-no confidence scores or completion percentage are invented. On small screens,
-the cards stack and allow document scrolling.
-
-The analysis scrollers reserve room around focused elements. The browser QA checks
-all four computed border widths/styles in normal, hover and keyboard-focus states,
-and verifies that the complete focus outline fits inside both its card and scroll
-panel. It checks the CTA is visible at 1440×900, no desktop document scrolling at
-1024×600, stable header bounds across tabs, and idle/changed/loading/complete/empty/
-error states. Questions and results persist across PT/EN and tab changes. All QA
-analysis content is synthetic and no AI provider is called.
-
-![Analysis ready to receive a question](docs/images/advisor-idle.png)
-
-![Analysis in progress](docs/images/advisor-loading.png)
-
-![Analysis cards in dark theme](docs/images/advisor-analysis-dark-pt.png)
-
-![Status after changing the developer](docs/images/advisor-empty.png)
-
-<img src="docs/images/advisor-mobile.png" alt="Analysis cards on a small screen, with a complete textarea focus border" width="390">
-
-## Consistent workspace cards
-
-Retrieval and Setup use the same card surface, border, radius and spacing as the
-Advisor. Their forms, actions and status/progress are grouped without changing API
-contracts or request behavior. The declared stack remains grouped by the real
-skill categories, with local technology logos and text fallbacks. Browser QA checks
-card rendering, field focus boundaries, state retention and both themes.
-
-![Retrieval cards in dark theme](docs/images/retrieval-dark-pt.png)
-
-![Setup cards in dark theme](docs/images/setup-dark-pt.png)
+The current scope is a functional local RAG proof of concept: inspect the evidence, question the generated conclusions, and assess its limits alongside its implementation.
